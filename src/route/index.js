@@ -1,4 +1,4 @@
-import { createRouter, createWebHashHistory } from "vue-router"
+import { createRouter, createWebHistory } from "vue-router"
 import TheRegister from "@/components/TheRegister.vue"
 import TheHome from "@/components/TheHome.vue"
 import TheLogin from "@/components/TheLogin.vue"
@@ -76,7 +76,7 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHashHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes
 })
 
