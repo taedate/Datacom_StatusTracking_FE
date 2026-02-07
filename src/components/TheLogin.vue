@@ -144,7 +144,7 @@ export default {
             // EventBus.emit("loginok", response.data.payload.userName);
 
             // ไปหน้าแรก
-            this.$router.push("/");
+            window.location.href = '/';
         }
     } catch (err) {
         console.error(err);
