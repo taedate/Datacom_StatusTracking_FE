@@ -363,9 +363,9 @@ export default {
       
       // Dialog & Upload controls
       uploadDialog: false,
-      fileInputBuffer: [], // รับค่าชั่วคราวจาก Input (เพื่อเอาไปเติมใส่ tempFiles)
-      tempFiles: [],       // ไฟล์ทั้งหมดที่อยู่ใน Dialog (รวมที่เลือกหลายๆ รอบ)
-      filesToUpload: [],   // ไฟล์ที่กดยืนยันแล้ว เตรียมส่งไป Server
+      fileInputBuffer: [],
+      tempFiles: [],       
+      filesToUpload: [],   
       
       statusOptions: ["รอดำเนินการ", "กำลังดำเนินการ", "เสร็จสิ้น"],
 
@@ -419,35 +419,45 @@ export default {
   },
 
   methods: {
-    // --- Upload Helper Methods ---
-    
-    // เมื่อเลือกไฟล์จาก Input ให้โยนใส่กองกลาง (tempFiles)
     addToTempFiles(files) {
         if (files && files.length > 0) {
             this.tempFiles = [...this.tempFiles, ...files];
-            // Reset Input ให้ว่างเพื่อรับค่ารอบหน้า
             this.$nextTick(() => {
                 this.fileInputBuffer = []; 
             });
         }
     },
 
-    // ลบไฟล์ออกจากกองกลางใน Dialog
     removeFromTemp(index) {
         this.tempFiles.splice(index, 1);
     },
 
-    // สร้าง URL รูปภาพเพื่อ Preview
     createPreview(file) {
         return URL.createObjectURL(file);
     },
 
-    // ----------------------------
-
+    // --- แก้ไข Function นี้ให้ฉลาดขึ้น เพื่อรองรับ Path เก่า ---
     getImageUrl(path) {
         if (!path) return '';
+        
+        let cleanPath = path;
+        
+        // 1. ถ้าเจอ Full Path ของ Render (/opt/render/...) ให้ตัดทิ้ง
+        // โดยการหาคำว่า 'uploads/' แล้วเอาแค่ส่วนข้างหลัง
+        if (cleanPath.includes('uploads/')) {
+            const parts = cleanPath.split('uploads/');
+            // parts[1] คือส่วนที่อยู่หลัง uploads/ เช่น projects/abc.jpg
+            cleanPath = 'uploads/' + parts[1];
+        }
+        
+        // 2. แก้เครื่องหมาย \ เป็น / เผื่อมาจาก Windows
+        cleanPath = cleanPath.replace(/\\/g, "/");
+
         const baseUrl = import.meta.env.VITE_API_URL.replace('/api', '');
-        return `${baseUrl}/${path}`;
+        
+        // 3. ป้องกัน Double Slash (//)
+        const finalUrl = `${baseUrl}/${cleanPath}`;
+        return finalUrl.replace(/([^:]\/)\/+/g, "$1");
     },
 
     openImage(url) {
@@ -583,6 +593,7 @@ export default {
             });
         }
 
+        // --- จุดที่แก้ไข: ลบ Headers ทิ้ง เพื่อให้ Axios จัดการเอง ---
         const res = await axios.post(endpoint, formData);
         
         if (res.data.message === "success") {
@@ -601,6 +612,7 @@ export default {
             }
         }
       } catch (err) {
+        console.error(err);
         Swal.fire("Error", "เกิดข้อผิดพลาดในการบันทึก", "error");
       } finally {
         this.isSaving = false;
