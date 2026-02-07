@@ -41,7 +41,7 @@
               <div class="card-body p-4">
                 <div class="d-flex align-items-start justify-content-between mb-3">
                   <div>
-                    <p class="text-muted small mb-1 text-uppercase fw-bold">งานรวมทั้งหมด</p>
+                    <p class="text-muted small mb-1 text-uppercase fw-bold">งานทั้งหมด</p>
                     <h2 class="fw-bold text-dark mb-0">{{ stats.totalCases }}</h2>
                   </div>                
                 </div>
