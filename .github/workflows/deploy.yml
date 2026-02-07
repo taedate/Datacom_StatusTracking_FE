@@ -1,0 +1,41 @@
+name: Build and Deploy to Hostinger
+
+on:
+  push:
+    branches:
+      - main  # หรือ master (ดูชื่อ branch หลักของคุณ)
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. ดึงโค้ดล่าสุดมา
+    - name: 🚚 Get latest code
+      uses: actions/checkout@v4
+
+    # 2. ลง Node.js เพื่อเตรียม Build
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    # 3. ลง Library และสั่ง Build (สร้างโฟลเดอร์ dist)
+    - name: 🔨 Install and Build
+      run: |
+        npm install
+        npm run build
+      env:
+        # ใส่ URL Backend ของคุณตรงนี้ (สำคัญมาก!)
+        VITE_API_URL: https://datacom-be.onrender.com
+
+    # 4. ส่งไฟล์ในโฟลเดอร์ dist ขึ้น Hostinger ผ่าน FTP
+    - name: 📂 Sync files
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        local-dir: ./dist/    # ส่งเฉพาะสิ่งที่อยู่ใน dist
+        server-dir: ./public_html/  # วางในโฟลเดอร์หลักของ Hostinger (ระวังทับไฟล์เก่านะ!)
+        dangerous-clean-slate: true # ลบไฟล์เก่าใน Server ทิ้งเพื่อให้สะอาด (ถ้าไม่กล้าลบให้เอาบรรทัดนี้ออก)
