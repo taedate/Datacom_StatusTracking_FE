@@ -583,9 +583,7 @@ export default {
             });
         }
 
-        const res = await axios.post(endpoint, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        const res = await axios.post(endpoint, formData);
         
         if (res.data.message === "success") {
             await Swal.fire({
