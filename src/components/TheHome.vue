@@ -14,7 +14,7 @@
                     <i class="bi bi-plus-lg me-2"></i>งานรับซ่อมใหม่
                   </router-link>
                   <router-link to="/caseSentRepair" class="btn btn-outline-light px-4 py-2 fw-bold rounded-pill">
-                    <i class="bi bi-send-arrow-up me-2"></i>ส่งซ่อมภายนอก
+                    <i class="bi bi-send-arrow-up me-2"></i>งานส่งซ่อมใหม่
                   </router-link>
                 </div>
               </div>
