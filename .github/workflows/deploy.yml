@@ -37,5 +37,5 @@ jobs:
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
         local-dir: ./dist/    # ส่งเฉพาะสิ่งที่อยู่ใน dist
-        server-dir: ./public_html/  # วางในโฟลเดอร์หลักของ Hostinger (ระวังทับไฟล์เก่านะ!)
+        server-dir: ./  # วางในโฟลเดอร์หลักของ Hostinger (ระวังทับไฟล์เก่านะ!)
         dangerous-clean-slate: true # ลบไฟล์เก่าใน Server ทิ้งเพื่อให้สะอาด (ถ้าไม่กล้าลบให้เอาบรรทัดนี้ออก)
