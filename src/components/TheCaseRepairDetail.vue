@@ -1,10 +1,11 @@
 <template>
   <div class="page-container d-flex flex-column">
+    
     <div
       class="px-4 py-3 px-md-6 py-md-4 border-bottom d-flex flex-wrap align-center justify-space-between bg-white flex-shrink-0 sticky-top shadow-sm sticky-header"
       style="z-index: 900; min-height: 80px; top: 0"
     >
-      <div>
+      <div class="mb-2 mb-md-0">
         <div class="d-flex align-center gap-2 mb-1">
           <h2 class="text-h5 font-weight-bold text-grey-darken-3 mb-0">
             {{ isNew ? "เปิดงานซ่อมใหม่" : `Case ID: ${formData.caseId}` }}
@@ -20,21 +21,47 @@
           </v-chip>
         </div>
         <div class="text-body-2 text-grey">
-          {{
-            isNew
-              ? "กรอกข้อมูลเพื่อรับเครื่องซ่อม"
-              : "แก้ไขรายละเอียดและอัปเดตสถานะงานซ่อม"
-          }}
+          {{ isNew ? "กรอกข้อมูลเพื่อรับเครื่องซ่อม" : "แก้ไขรายละเอียดและอัปเดตสถานะงานซ่อม" }}
         </div>
       </div>
 
-      <div class="d-flex align-center mt-3 mt-md-0" style="gap: 12px">
+      <div 
+        class="d-flex flex-wrap align-center justify-end mt-2 mt-md-0 w-100 w-md-auto" 
+        style="gap: 8px"
+      >
+        <v-btn
+          v-if="formData.refSentRepairId"
+          color="info"
+          variant="flat"
+          prepend-icon="mdi-link-variant"
+          class="text-capitalize font-weight-bold flex-grow-1 flex-md-grow-0"
+          rounded="pill"
+          :to="{
+            name: 'TheCaseSentRepairDetail',
+            params: { id: formData.refSentRepairId },
+          }"
+        >
+          ดูใบงานส่งซ่อม ({{ formData.refSentRepairId }})
+        </v-btn>
+
+        <v-btn
+          v-else-if="!isNew"
+          variant="flat"
+          color="warning"
+          prepend-icon="mdi-truck-delivery-outline"
+          class="text-capitalize font-weight-bold flex-grow-1 flex-md-grow-0"
+          rounded="pill"
+          @click="sendToExternalRepair"
+        >
+          ส่งซ่อมภายนอก
+        </v-btn>
+
         <v-btn
           v-if="!isNew"
-          variant="outlined"
-          color="primary"
+          variant="flat"
+          color="#4D2FB2"
           prepend-icon="mdi-printer"
-          class="text-capitalize font-weight-bold"
+          class="text-capitalize font-weight-bold flex-grow-1 flex-md-grow-0"
           rounded="pill"
           @click="printPDF"
         >
@@ -42,10 +69,10 @@
         </v-btn>
 
         <v-btn
-          variant="text"
+          variant="outlined"
           color="grey-darken-1"
           prepend-icon="mdi-arrow-left"
-          class="text-capitalize font-weight-bold"
+          class="text-capitalize font-weight-bold flex-grow-1 flex-md-grow-0"
           rounded="pill"
           @click="$router.go(-1)"
         >
@@ -62,7 +89,7 @@
         class="d-flex justify-content-center align-items-center"
         style="height: 50vh"
       >
-        <div class="spinner-border text-primary" role="status"></div>
+        <div class="spinner-border text-theme" role="status"></div>
       </div>
 
       <div v-else class="mx-auto" style="max-width: 100%">
@@ -208,12 +235,19 @@
                 variant="outlined"
                 density="compact"
                 bg-color="white"
-                color="primary"
+                color="#4D2FB2"
                 hide-details
                 class="w-100 flex-grow-1"
                 style="max-width: 400px"
                 @update:model-value="onStatusChange"
               ></v-select>
+              <span
+                v-if="statusChanged"
+                class="text-red font-weight-bold text-no-wrap d-flex align-center"
+              >
+                <v-icon icon="mdi-alert-circle" size="small" class="mr-1"></v-icon>
+                กรุณาบันทึก
+              </span>
             </div>
           </div>
 
@@ -293,7 +327,7 @@
                 <div class="text-subtitle-1 font-weight-bold mb-1">
                   ประเภทอุปกรณ์ <span class="text-red">*</span>
                 </div>
-                <v-combobox
+                <v-select
                   v-model="formData.caseType"
                   :items="typeOptions"
                   placeholder="เช่น โน้ตบุ๊ค, พีซี"
@@ -301,7 +335,7 @@
                   density="comfortable"
                   bg-color="white"
                   :rules="[rules.required]"
-                ></v-combobox>
+                ></v-select>
               </div>
               <div class="col-12 col-md-6">
                 <div class="text-subtitle-1 font-weight-bold mb-1">
@@ -474,24 +508,40 @@
       </div>
     </div>
 
+    <div style="position: fixed; left: -9999px; top: 0">
+      <RepairReceipt :data="formData" />
+    </div>
+
     <div
       class="bg-white border-top py-3 px-4 px-md-6 d-flex align-items-center justify-content-end fixed-bottom-custom shadow-lg"
       style="z-index: 1040"
     >
       <span class="text-muted small me-auto d-none d-md-inline">
-        <v-icon
-          icon="mdi-information-outline"
-          size="small"
-          class="me-1"
-        ></v-icon>
-        กรุณาตรวจสอบข้อมูลก่อนบันทึก
+        <template v-if="isDirty">
+          <v-icon
+            icon="mdi-alert-circle"
+            size="small"
+            class="me-2 text-danger"
+          ></v-icon>
+          <span class="text-danger font-weight-bold">
+            มีการแก้ไขข้อมูล อย่าลืมบันทึก!
+          </span>
+        </template>
+        <template v-else>
+          <v-icon
+            icon="mdi-information-outline"
+            size="small"
+            class="me-1"
+          ></v-icon>
+          กรุณาตรวจสอบข้อมูลก่อนบันทึก
+        </template>
       </span>
 
       <button
         class="btn btn-primary px-4 py-2 rounded-pill d-flex align-items-center gap-2 shadow-sm btn-save-custom"
         @click="saveForm"
         :disabled="isSaving"
-        style="background-color: #161e54; border: none"
+        style="background-color: #4D2FB2; border: none"
       >
         <span v-if="isSaving" class="spinner-border spinner-border-sm"></span>
         <v-icon v-else icon="mdi-content-save" class="me-1"></v-icon>
@@ -504,26 +554,34 @@
 <script>
 import axios from "axios";
 import Swal from "sweetalert2";
+import { swalTheme } from "@/utils/swalTheme";
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.css";
 import { Thai } from "flatpickr/dist/l10n/th.js";
-
+import html2pdf from "html2pdf.js"; 
+import RepairReceipt from "./RepairReceipt.vue"; 
 
 export default {
   name: "CaseRepairDetail",
+  components: {
+    RepairReceipt, 
+  },
   data() {
     return {
       isNew: false,
       loading: false,
       isSaving: false,
+      statusChanged: false,
+      isDirty: false,
+      originalFormData: null, // เก็บค่าเริ่มต้น
 
       statusOptions: [
         "รอรับเครื่อง",
         "รับเครื่องแล้ว",
         "กำลังซ่อม",
-        "รอสินค้า",
         "ซ่อมเสร็จ",
         "ส่งมอบ",
+        "ยกเลิก",
       ],
       typeOptions: [
         "ซ่อมคอมพิวเตอร์",
@@ -542,19 +600,20 @@ export default {
         cusFirstName: "",
         cusLastName: "",
         cusPhone: "",
-        caseInstitution: "", 
+        caseInstitution: "",
         brokenSymptom: "",
         caseType: null,
-        caseBrand: "", 
-        caseModel: "", 
-        caseSN: "", 
-        caseDurableArticles: "", 
-        caseEquipment: "", 
+        caseBrand: "",
+        caseModel: "",
+        caseSN: "",
+        caseDurableArticles: "",
+        caseEquipment: "",
         caseStatus: "รับเครื่องแล้ว",
         datePickUp: "",
         dateBeforePicUp: "",
         dateComplete: "",
         dateDelivered: "",
+        refSentRepairId: null,
       },
 
       previousStatus: "",
@@ -575,7 +634,13 @@ export default {
       this.formData.caseStatus = "รับเครื่องแล้ว";
       this.previousStatus = "รับเครื่องแล้ว";
       this.formData.datePickUp = this.getTodayThaiDate();
-      this.$nextTick(() => this.initDatePickers());
+      this.$nextTick(() => { 
+        this.initDatePickers();
+        // Simulating a delay to let form settle before taking snapshot
+        setTimeout(() => {
+          this.originalFormData = JSON.stringify(this.formData);
+        }, 500);
+      });
     } else {
       this.isNew = false;
       this.formData.caseId = routeId;
@@ -583,44 +648,114 @@ export default {
     }
   },
 
+  watch: {
+    formData: {
+      handler(newVal) {
+        if (this.originalFormData) {
+          const currentData = JSON.stringify(newVal);
+          this.isDirty = currentData !== this.originalFormData;
+        }
+      },
+      deep: true,
+    },
+  },
+
   beforeUnmount() {
     Object.values(this.pickers).forEach((fp) => fp && fp.destroy());
   },
 
+  beforeRouteLeave(to, from, next) {
+    if (this.isDirty) {
+      Swal.fire({
+        title: "มีการแก้ไขข้อมูลค้างอยู่",
+        text: "คุณต้องการออกจากหน้านี้โดยไม่บันทึกหรือไม่?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: 'ออกจากหน้านี้',
+        cancelButtonText: 'ยกเลิก',
+        ...swalTheme.danger
+      }).then((result) => {
+        if (result.isConfirmed) {
+          next();
+        } else {
+          next(false);
+        }
+      });
+    } else {
+      next();
+    }
+  },
+
   methods: {
+    sendToExternalRepair() {
+      // 1. เตรียมข้อมูลที่จะส่งไป
+      const queryData = {
+        refCaseId: this.formData.caseId, // อ้างอิงว่ามาจากเคสไหน
+        cusName: `${this.formData.cusFirstName} ${this.formData.cusLastName}`, // รวมชื่อ-สกุล
+        type: this.formData.caseType,
+        brand: this.formData.caseBrand,
+        model: this.formData.caseModel,
+        sn: this.formData.caseSN,
+        symptom: this.formData.brokenSymptom,
+        equipment: this.formData.caseEquipment,
+      };
+
+      // 2. สั่งเปลี่ยนหน้าพร้อมแนบข้อมูลไปด้วย
+      this.$router.push({
+        name: "TheCaseSentRepairDetail", // ตรวจสอบชื่อ Route ใน router/index.js ให้ตรงนะครับ
+        params: { id: "new" }, // แจ้งว่าเป็นงานใหม่
+        query: queryData, // แนบข้อมูลไป
+      });
+    },
     async fetchDetail(id) {
       this.loading = true;
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/get-case-detail/${id}`);
+        const res = await axios.get(
+          `${import.meta.env.VITE_API_URL}/get-case-detail/${id}`
+        );
         if (res.data.message === "success") {
           const data = res.data.data;
+          
           this.formData = {
             caseId: data.caseId,
             cusFirstName: data.cusFirstName,
             cusLastName: data.cusLastName,
             cusPhone: data.cusPhone,
-            caseInstitution: data.caseInstitution, 
+            caseInstitution: data.caseInstitution,
             brokenSymptom: data.brokenSymptom,
             caseType: data.caseType,
-            caseBrand: data.caseBrand, 
-            caseModel: data.caseModel, 
-            caseSN: data.caseSN, 
-            caseDurableArticles: data.caseDurableArticles, 
-            caseEquipment: data.caseEquipment, 
+            caseBrand: data.caseBrand,
+            caseModel: data.caseModel,
+            caseSN: data.caseSN,
+            caseDurableArticles: data.caseDurableArticles,
+            caseEquipment: data.caseEquipment,
             caseStatus: data.caseStatus,
             datePickUp: data.datePickUp,
             dateBeforePicUp: data.dateBeforePicUp,
             dateComplete: data.dateComplete,
             dateDelivered: data.dateDelivered,
+            
           };
+          this.formData.refSentRepairId = data.refSentRepairId || null;
           this.previousStatus = data.caseStatus;
         }
       } catch (err) {
         console.error("Error fetching detail:", err);
-        Swal.fire("Error", "ไม่สามารถโหลดข้อมูลได้", "error");
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "ไม่สามารถโหลดข้อมูลได้",
+          ...swalTheme.danger
+        });
       } finally {
         this.loading = false;
-        this.$nextTick(() => this.initDatePickers());
+        this.$nextTick(() => {
+          this.initDatePickers();
+          // Simulating a delay to let form settle before taking snapshot
+          setTimeout(() => {
+            this.originalFormData = JSON.stringify(this.formData);
+          }, 500);
+        });
       }
     },
 
@@ -631,7 +766,7 @@ export default {
           icon: "warning",
           title: "ข้อมูลไม่ครบถ้วน",
           text: "กรุณากรอกข้อมูลที่จำเป็นให้ครบ",
-          confirmButtonColor: "#161E54",
+          ...swalTheme.confirm
         });
         return;
       }
@@ -646,6 +781,13 @@ export default {
         const res = await axios.post(endpoint, payload);
 
         if (res.data.message === "success") {
+          this.statusChanged = false;
+          // Update the snapshot so isDirty becomes false
+          this.originalFormData = JSON.stringify(this.formData);
+          
+          // ✨ เพิ่มบรรทัดนี้เพื่อเคลียร์สถานะแจ้งเตือน ✨
+          this.isDirty = false; 
+          
           await Swal.fire({
             icon: "success",
             title: "บันทึกสำเร็จ!",
@@ -659,7 +801,12 @@ export default {
         }
       } catch (err) {
         console.error("Save error:", err);
-        Swal.fire("Error", "เกิดข้อผิดพลาดในการบันทึก", "error");
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "เกิดข้อผิดพลาดในการบันทึก",
+          ...swalTheme.danger
+        });
       } finally {
         this.isSaving = false;
       }
@@ -670,14 +817,14 @@ export default {
 
       const result = await Swal.fire({
         title: "ยืนยันเปลี่ยนสถานะ?",
-        html: `ต้องการเปลี่ยนจาก <b class="text-secondary">${this.previousStatus}</b> <br> เป็น <b class="text-primary">${newStatus}</b> ใช่หรือไม่?`,
+        html: `ต้องการเปลี่ยนจาก <b class="text-secondary">${this.previousStatus}</b> <br> เป็น <b class="text-theme">${newStatus}</b> ใช่หรือไม่?`,
         icon: "question",
         showCancelButton: true,
         confirmButtonText: "ยืนยัน",
         cancelButtonText: "ยกเลิก",
-        confirmButtonColor: "#161E54",
         cancelButtonColor: "#d33",
         reverseButtons: false,
+        ...swalTheme.confirm
       });
 
       if (result.isConfirmed) {
@@ -698,6 +845,7 @@ export default {
         }
 
         this.previousStatus = newStatus;
+        this.statusChanged = true;
       } else {
         this.$nextTick(() => {
           this.formData.caseStatus = this.previousStatus;
@@ -725,6 +873,8 @@ export default {
           return "primary";
         case "รอรับเครื่อง":
           return "grey";
+        case "ยกเลิก":
+          return "error";
         default:
           return "grey";
       }
@@ -734,12 +884,13 @@ export default {
       const status = this.formData.caseStatus;
       let currentStep = 1;
 
+      if (status === "ยกเลิก") currentStep = 0;
       if (status === "รับเครื่องแล้ว") currentStep = 2;
       else if (status === "กำลังซ่อม" || status === "รอสินค้า") currentStep = 3;
       else if (status === "ซ่อมเสร็จ") currentStep = 4;
       else if (status === "ส่งมอบ") currentStep = 5;
 
-      const activeColor = "#161E54";
+      const activeColor = "#4D2FB2";
       const inactiveColor = "#E0E0E0";
       const successColor = "#107C41";
 
@@ -750,9 +901,11 @@ export default {
           ? activeColor
           : inactiveColor;
       } else {
-        if (step < currentStep) return successColor;
-        if (step === currentStep) return activeColor;
-        return inactiveColor;
+        return step < currentStep
+          ? successColor
+          : step === currentStep
+          ? activeColor
+          : inactiveColor;
       }
     },
 
@@ -826,46 +979,38 @@ export default {
     filterPhone(event) {
       this.formData.cusPhone = event.target.value.replace(/[^0-9]/g, "");
     },
+
+    // ✅ ฟังก์ชัน Print PDF ใหม่ (Client-Side)
     async printPDF() {
       Swal.fire({
         title: "กำลังสร้างไฟล์ PDF...",
         allowOutsideClick: false,
         didOpen: () => {
           Swal.showLoading();
+          const loader = Swal.getPopup()?.querySelector(".swal2-loader");
+          if (loader) {
+            loader.style.borderColor = "#4D2FB2";
+            loader.style.borderTopColor = "#4D2FB2";
+          }
         },
       });
 
       try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_URL}/print-case/${this.formData.caseId}`,
-          {
-            responseType: "blob", // สำคัญมาก: บอกว่าจะเอาไฟล์
-            headers: { Accept: "application/pdf" },
-          }
-        );
+        // 1. หา Element ที่ซ่อนอยู่ (จาก RepairReceipt.vue)
+        const element = document.getElementById("receipt-content");
+        if (!element) throw new Error("ไม่พบแบบฟอร์มใบงาน");
 
-        if (response.data.type !== "application/pdf") {
-          const text = await response.data.text();
-          let errMsg = text;
-          try {
-            const json = JSON.parse(text);
-            errMsg = json.message || json.error || text;
-          } catch (e) {}
+        // 2. ตั้งค่า html2pdf
+        const opt = {
+          margin: 0,
+          filename: `Repair-${this.formData.caseId}.pdf`,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        };
 
-          throw new Error(`Server Error: ${errMsg}`);
-        }
-
-        const url = window.URL.createObjectURL(
-          new Blob([response.data], { type: "application/pdf" })
-        );
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", `Repair-${this.formData.caseId}.pdf`);
-        document.body.appendChild(link);
-        link.click();
-
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
+        // 3. สั่งสร้างไฟล์ตรงนี้เลย (ไม่มียิงไป Backend)
+        await html2pdf().set(opt).from(element).save();
 
         Swal.close();
       } catch (error) {
@@ -873,8 +1018,8 @@ export default {
         Swal.fire({
           icon: "error",
           title: "ออกใบรับซ่อมไม่สำเร็จ",
-          text: error.message || "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ",
-          confirmButtonColor: "#d33",
+          text: error.message,
+          ...swalTheme.danger
         });
       }
     },
@@ -884,16 +1029,15 @@ export default {
 
 <style scoped>
 .bg-light-gray {
-  background-color: #f3f4f6;
+  background-color: var(--background);
   min-height: 100vh;
 }
 .page-container {
   width: 100%;
   min-height: 100vh;
   transition: all 0.3s ease;
-  background-color: #f3f4f6;
+  background-color: var(--background);
 }
-
 @media (min-width: 992px) {
   .page-container {
     padding-left: 280px !important;
@@ -916,13 +1060,10 @@ export default {
     position: fixed;
     bottom: 0;
   }
-  
-  /* ✅ เพิ่มกฎ CSS นี้เพื่อดัน Header ลงมา */
   .sticky-header {
     top: 60px !important;
   }
 }
-
 .section-block {
   border: 1px solid #e9ecef;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -930,7 +1071,7 @@ export default {
 .section-number {
   width: 32px;
   height: 32px;
-  background-color: #161e54;
+  background-color: var(--theme-primary);
   color: white;
   border-radius: 50%;
   display: flex;
@@ -944,6 +1085,6 @@ export default {
 }
 .btn-save-custom:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(22, 30, 84, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(77, 47, 178, 0.3) !important;
 }
 </style>

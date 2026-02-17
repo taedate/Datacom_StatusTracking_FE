@@ -28,7 +28,7 @@
                     </div>
                     <hr>
                     <div class="d-flex flex-column">
-                        <span class="fw-bold fs-4 tracking-tight text-dark" style="color: #161E54 !important;">Datacom</span>
+                        <span class="fw-bold fs-4 tracking-tight text-dark" style="color: var(--text-dark) !important;">Datacom</span>
                         <span class="text-muted text-uppercase fw-bold" style="font-size: 0.6rem; letter-spacing: 1.5px;">Status Tracking</span>
                     </div>
                 </div>
@@ -69,6 +69,16 @@
                     >
                         <i class="bi bi-gear-fill me-3 fs-5"></i>
                         <span>งานติดตั้ง</span>
+                    </router-link>
+
+                    <router-link 
+                        to="/quotation" 
+                        class="nav-link sidebar-link d-flex align-items-center" 
+                        :class="{ 'active': $route.path.includes('/quotation') }"
+                        @click="closeMenu"
+                    >
+                        <i class="bi bi-receipt-cutoff me-3 fs-5"></i>
+                        <span>ใบเสนอราคา</span>
                     </router-link>
 
                     
@@ -123,7 +133,7 @@
                     <div class="modal-body text-center pt-0 pb-4 px-4">
                         <div class="position-relative d-inline-block mb-3">
                              <div class="rounded-circle d-flex justify-content-center align-items-center shadow-sm" 
-                                 style="width: 80px; height: 80px; background: linear-gradient(135deg, #161E54 0%, #3045a8 100%); color: #fff; font-size: 2rem; font-weight: bold;">
+                                 style="width: 80px; height: 80px; background: linear-gradient(135deg, var(--theme-primary) 0%, #7B56D8 100%); color: #fff; font-size: 2rem; font-weight: bold;">
                                 {{ memName ? memName.charAt(0).toUpperCase() : 'U' }}
                             </div>
                         </div>
@@ -146,6 +156,7 @@
 <script>
 import { EventBus } from "@/even-bus";
 import Swal from "sweetalert2";
+import { swalTheme } from "@/utils/swalTheme";
 import { authService } from "@/services/authService";
 
 export default {
@@ -198,15 +209,9 @@ export default {
                 text: "ยืนยันการออกจากระบบ",
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#e0e0e0',
                 confirmButtonText: 'ออก',
                 cancelButtonText: 'ยกเลิก',
-                customClass: {
-                    confirmButton: 'btn btn-danger text-light rounded-pill px-4',
-                    cancelButton: 'btn btn-light text-dark rounded-pill px-4'
-                },
-                buttonsStyling: false
+                ...swalTheme.danger
             });
 
             if (result.isConfirmed) {
@@ -257,15 +262,21 @@ export default {
                             this.$router.push("/login");
                         }, 500);
                     } else {
-                        Swal.fire('Error', 'ออกจากระบบไม่สำเร็จ', 'error');
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'ออกจากระบบไม่สำเร็จ',
+                            ...swalTheme.danger
+                        });
                     }
                 } catch (err) {
                     console.error("Logout error:", err);
-                    Swal.fire(
-                        'Error',
-                        err.response?.data?.error || 'เกิดข้อผิดพลาดในการออกจากระบบ',
-                        'error'
-                    );
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: err.response?.data?.error || 'เกิดข้อผิดพลาดในการออกจากระบบ',
+                        ...swalTheme.danger
+                    });
                 }
             }
         },
@@ -290,7 +301,7 @@ export default {
 
 /* 2. Logo */
 .logo-icon-bg {
-    background: linear-gradient(135deg, #161E54 0%, #2a3b7c 100%);
+    background: linear-gradient(135deg, var(--theme-primary) 0%, #7B56D8 100%);
     width: 45px;
     height: 45px;
 }
@@ -309,14 +320,14 @@ export default {
 
 .sidebar-link:hover {
     background-color: #f1f5f9;
-    color: #161E54;
+    color: var(--text-dark);
     transform: translateX(3px);
 }
 
 /* Active State */
 .sidebar-link.active {
-    background-color: #161E54;
-    color: #ffffff;
+    background-color: var(--theme-primary);
+    color: var(--theme-on-primary);
     box-shadow: 0 4px 12px rgba(22, 30, 84, 0.25);
 }
 
@@ -331,8 +342,8 @@ export default {
 .avatar-circle {
     width: 40px;
     height: 40px;
-    background: linear-gradient(135deg, #FF6B6B 0%, #EE5253 100%);
-    color: #fff;          
+    background: linear-gradient(135deg, var(--theme-primary) 0%, #7B56D8 100%);
+    color: #fff;
     border-radius: 50%;
     display: flex;
     align-items: center;

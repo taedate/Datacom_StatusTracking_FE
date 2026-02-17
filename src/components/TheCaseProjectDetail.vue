@@ -26,7 +26,7 @@
 
       <div class="d-flex align-center mt-3 mt-md-0" style="gap: 12px">
         <v-btn
-          variant="text"
+          variant="outlined"
           color="grey-darken-1"
           prepend-icon="mdi-arrow-left"
           class="text-capitalize font-weight-bold"
@@ -41,7 +41,7 @@
     <div class="flex-grow-1 overflow-y-auto px-4 py-5 px-md-6 pb-5 mb-5 bg-light-gray">
       
       <div v-if="loading" class="d-flex justify-content-center align-items-center" style="height: 50vh">
-        <div class="spinner-border text-primary" role="status"></div>
+        <div class="spinner-border text-theme" role="status"></div>
       </div>
 
       <div v-else class="mx-auto" style="max-width: 100%">
@@ -87,12 +87,19 @@
                   variant="outlined"
                   density="compact"
                   bg-color="white"
-                  color="primary"
+                  color="#4D2FB2"
                   hide-details
                   class="w-100 flex-grow-1"
                   style="max-width: 400px;"
                   @update:model-value="onStatusChange"
                ></v-select>
+                <span
+                  v-if="statusChanged"
+                  class="text-red font-weight-bold text-no-wrap d-flex align-center"
+                >
+                  <v-icon icon="mdi-alert-circle" size="small" class="mr-1"></v-icon>
+                  กรุณาบันทึก
+                </span>
             </div>
           </div>
 
@@ -180,7 +187,7 @@
                     <v-btn 
                         v-if="!isNew"
                         size="small" 
-                        color="primary" 
+                        color="#4D2FB2" 
                         variant="tonal"
                         prepend-icon="mdi-camera-plus"
                         @click="uploadDialog = true"
@@ -218,8 +225,8 @@
 
                  <div v-if="filesToUpload.length > 0" class="pa-3 bg-blue-lighten-5 rounded-lg border border-blue mt-3">
                     <div class="d-flex align-center mb-2">
-                        <v-icon icon="mdi-cloud-upload" color="primary" class="me-2"></v-icon>
-                        <span class="font-weight-bold text-primary">รอการบันทึก ({{ filesToUpload.length }} ไฟล์ใหม่)</span>
+                        <v-icon icon="mdi-cloud-upload" color="#4D2FB2" class="me-2"></v-icon>
+                        <span class="font-weight-bold text-theme">รอการบันทึก ({{ filesToUpload.length }} ไฟล์ใหม่)</span>
                     </div>
                     <div class="d-flex flex-wrap gap-2">
                         <v-chip 
@@ -249,15 +256,31 @@
 
     <div class="bg-white border-top py-3 px-4 px-md-6 d-flex align-items-center justify-content-end fixed-bottom-custom shadow-lg" style="z-index: 1040">
       <span class="text-muted small me-auto d-none d-md-inline">
-        <v-icon icon="mdi-information-outline" size="small" class="me-1"></v-icon>
-        กรุณาตรวจสอบข้อมูลก่อนบันทึก
+        <template v-if="isDirty">
+          <v-icon
+            icon="mdi-alert-circle"
+            size="small"
+            class="me-2 text-danger"
+          ></v-icon>
+          <span class="text-danger font-weight-bold">
+            มีการแก้ไขข้อมูล อย่าลืมบันทึก!
+          </span>
+        </template>
+        <template v-else>
+          <v-icon
+            icon="mdi-information-outline"
+            size="small"
+            class="me-1"
+          ></v-icon>
+          กรุณาตรวจสอบข้อมูลก่อนบันทึก
+        </template>
       </span>
 
       <button
         class="btn btn-primary px-4 py-2 rounded-pill d-flex align-items-center gap-2 shadow-sm btn-save-custom"
         @click="saveForm"
         :disabled="isSaving"
-        style="background-color: #161e54; border: none;"
+        style="background-color: #4D2FB2; border: none;"
       >
         <span v-if="isSaving" class="spinner-border spinner-border-sm"></span>
         <v-icon v-else icon="mdi-content-save" class="me-1"></v-icon>
@@ -332,7 +355,7 @@
             ยกเลิก
           </v-btn>
           <v-btn 
-            color="#161E54" 
+            color="#4D2FB2" 
             class="text-white" 
             :disabled="tempFiles.length === 0"
             @click="confirmUploadFiles"
@@ -349,6 +372,7 @@
 <script>
 import axios from "axios";
 import Swal from "sweetalert2";
+import { swalTheme } from "@/utils/swalTheme";
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.css";
 import { Thai } from "flatpickr/dist/l10n/th.js";
@@ -360,6 +384,9 @@ export default {
       isNew: false,
       loading: false,
       isSaving: false,
+      statusChanged: false,
+      isDirty: false,
+      originalFormData: null, // เก็บค่าเริ่มต้น
       
       // Dialog & Upload controls
       uploadDialog: false,
@@ -367,7 +394,7 @@ export default {
       tempFiles: [],       
       filesToUpload: [],   
       
-      statusOptions: ["รอดำเนินการ", "กำลังดำเนินการ", "เสร็จสิ้น"],
+      statusOptions: ["รอดำเนินการ", "กำลังดำเนินการ", "เสร็จสิ้น", "ยกเลิก"],
 
       formData: {
         pId: null,
@@ -406,7 +433,15 @@ export default {
       this.formData.pStatus = "รอดำเนินการ";
       this.previousStatus = "รอดำเนินการ";
       this.formData.dateCreate = ""; 
-      this.$nextTick(() => this.initDatePickers());
+      this.$nextTick(() => { 
+        this.initDatePickers();
+        // Simulating a delay to let form settle before taking snapshot
+        setTimeout(() => {
+          this.originalFormData = JSON.stringify(this.formData);
+          // ✨ แก้ไข: รีเซ็ต isDirty เป็น false เพื่อป้องกันการแจ้งเตือนค้าง
+          this.isDirty = false;
+        }, 500);
+      });
     } else {
       this.isNew = false;
       this.formData.pId = routeId;
@@ -414,8 +449,42 @@ export default {
     }
   },
 
+  watch: {
+    formData: {
+      handler(newVal) {
+        if (this.originalFormData) {
+          const currentData = JSON.stringify(newVal);
+          this.isDirty = currentData !== this.originalFormData;
+        }
+      },
+      deep: true,
+    },
+  },
+
   beforeUnmount() {
     Object.values(this.pickers).forEach(fp => fp && fp.destroy());
+  },
+
+  beforeRouteLeave(to, from, next) {
+    if (this.isDirty) {
+      Swal.fire({
+        title: "มีการแก้ไขข้อมูลค้างอยู่",
+        text: "คุณต้องการออกจากหน้านี้โดยไม่บันทึกหรือไม่?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: 'ออกจากหน้านี้',
+        cancelButtonText: 'ยกเลิก',
+        ...swalTheme.danger
+      }).then((result) => {
+        if (result.isConfirmed) {
+          next();
+        } else {
+          next(false);
+        }
+      });
+    } else {
+      next();
+    }
   },
 
   methods: {
@@ -436,28 +505,19 @@ export default {
         return URL.createObjectURL(file);
     },
 
-    // --- แก้ไข Function นี้ให้ฉลาดขึ้น เพื่อรองรับ Path เก่า ---
     getImageUrl(path) {
         if (!path) return '';
+        let cleanPath = path.replace(/\\/g, "/"); 
         
-        let cleanPath = path;
-        
-        // 1. ถ้าเจอ Full Path ของ Render (/opt/render/...) ให้ตัดทิ้ง
-        // โดยการหาคำว่า 'uploads/' แล้วเอาแค่ส่วนข้างหลัง
         if (cleanPath.includes('uploads/')) {
-            const parts = cleanPath.split('uploads/');
-            // parts[1] คือส่วนที่อยู่หลัง uploads/ เช่น projects/abc.jpg
-            cleanPath = 'uploads/' + parts[1];
+            cleanPath = cleanPath.substring(cleanPath.indexOf('uploads/'));
         }
         
-        // 2. แก้เครื่องหมาย \ เป็น / เผื่อมาจาก Windows
-        cleanPath = cleanPath.replace(/\\/g, "/");
+        if (cleanPath.startsWith('/')) {
+            cleanPath = cleanPath.substring(1);
+        }
 
-        const baseUrl = import.meta.env.VITE_API_URL.replace('/api', '');
-        
-        // 3. ป้องกัน Double Slash (//)
-        const finalUrl = `${baseUrl}/${cleanPath}`;
-        return finalUrl.replace(/([^:]\/)\/+/g, "$1");
+        return `${import.meta.env.VITE_API_URL}/${cleanPath}`;
     },
 
     openImage(url) {
@@ -470,16 +530,31 @@ export default {
         const res = await axios.get(`${import.meta.env.VITE_API_URL}/get-project-detail/${id}`);
         if (res.data.message === "success") {
            const data = res.data.data;
-           this.formData = { ...data };
-           if (data.dateCreate) this.formData.dateCreate = this.formatDateDBtoThai(data.dateCreate);
-           if (data.dateComplete) this.formData.dateComplete = this.formatDateDBtoThai(data.dateComplete);
+           this.formData = { ...data };           
+
+           if (data.dateCreate) this.formData.dateCreate = data.dateCreate;
+           if (data.dateComplete) this.formData.dateComplete = data.dateComplete;
            this.previousStatus = data.pStatus;
+           this.statusChanged = false;
         }
       } catch (err) {
-        Swal.fire("Error", "ไม่สามารถโหลดข้อมูลได้", "error");
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "ไม่สามารถโหลดข้อมูลได้",
+          ...swalTheme.danger
+        });
       } finally {
         this.loading = false;
-        this.$nextTick(() => this.initDatePickers());
+        this.$nextTick(() => {
+          this.initDatePickers();
+          // Snapshot for dirty check
+          setTimeout(() => {
+            this.originalFormData = JSON.stringify(this.formData);
+            // ✨ แก้ไข: รีเซ็ต isDirty เป็น false หลังจากโหลดข้อมูลเสร็จ
+            this.isDirty = false;
+          }, 500);
+        });
       }
     },
 
@@ -527,12 +602,12 @@ export default {
 
         const result = await Swal.fire({
             title: 'ยืนยันเปลี่ยนสถานะ?',
-            html: `เปลี่ยนเป็น <b class="text-primary">${newStatus}</b> ใช่หรือไม่?`,
+            html: `เปลี่ยนเป็น <b class="text-theme">${newStatus}</b> ใช่หรือไม่?`,
             icon: 'question',
             showCancelButton: true,
             confirmButtonText: 'ยืนยัน',
             cancelButtonText: 'ยกเลิก',
-            confirmButtonColor: '#161E54',
+          ...swalTheme.confirm
         });
 
         if (result.isConfirmed) {
@@ -560,24 +635,38 @@ export default {
         }
         
         this.previousStatus = newStatus;
+        this.statusChanged = true;
     },
 
     async saveForm() {
       const { valid } = await this.$refs.projectForm.validate();
       if (!valid) {
-        Swal.fire('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกข้อมูลให้ครบถ้วน', 'warning');
+        Swal.fire({
+          icon: 'warning',
+          title: 'ข้อมูลไม่ครบถ้วน',
+          text: 'กรุณากรอกข้อมูลให้ครบถ้วน',
+          ...swalTheme.confirm
+        });
         return;
       }
 
       if (this.formData.pStatus === 'เสร็จสิ้น' && this.existingImages.length === 0 && this.filesToUpload.length === 0) {
-          Swal.fire('ต้องการหลักฐาน', 'งานที่เสร็จสิ้นต้องมีรูปภาพประกอบ', 'warning');
+          Swal.fire({
+            icon: 'warning',
+            title: 'ต้องการหลักฐาน',
+            text: 'งานที่เสร็จสิ้นต้องมีรูปภาพประกอบ',
+            ...swalTheme.confirm
+          });
           this.uploadDialog = true;
           return;
       }
 
       this.isSaving = true;
       try {
-        const endpoint = this.isNew ? `${import.meta.env.VITE_API_URL}/create-project` : `${import.meta.env.VITE_API_URL}/update-project`;
+        const endpoint = this.isNew 
+            ? `${import.meta.env.VITE_API_URL}/create-project` 
+            : `${import.meta.env.VITE_API_URL}/update-project`;
+            
         const formData = new FormData();
 
         Object.keys(this.formData).forEach(key => {
@@ -593,16 +682,21 @@ export default {
             });
         }
 
-        // --- จุดที่แก้ไข: ลบ Headers ทิ้ง เพื่อให้ Axios จัดการเอง ---
         const res = await axios.post(endpoint, formData);
         
         if (res.data.message === "success") {
+            // Update snapshot immediately to clear dirty state
+            this.originalFormData = JSON.stringify(this.formData);
+            this.isDirty = false;
+
             await Swal.fire({
                 icon: 'success',
                 title: 'บันทึกสำเร็จ!',
                 timer: 1500,
                 showConfirmButton: false
             });
+
+            this.statusChanged = false;
             
             if (this.isNew) {
                 this.$router.replace({ name: 'TheCaseProject' });
@@ -613,7 +707,12 @@ export default {
         }
       } catch (err) {
         console.error(err);
-        Swal.fire("Error", "เกิดข้อผิดพลาดในการบันทึก", "error");
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "เกิดข้อผิดพลาดในการบันทึก",
+          ...swalTheme.danger
+        });
       } finally {
         this.isSaving = false;
       }
@@ -653,14 +752,16 @@ export default {
     getStatusColor(status) {
         if (status === 'เสร็จสิ้น') return 'success';
         if (status === 'กำลังดำเนินการ') return 'info';
+        if (status === 'ยกเลิก') return 'error';
         return 'grey-darken-1';
     },
     getStepColor(step, isDivider = false) {
         const status = this.formData.pStatus;
         let currentStep = 1;
+        if (status === 'ยกเลิก') currentStep = 0;
         if (status === 'กำลังดำเนินการ') currentStep = 2;
         if (status === 'เสร็จสิ้น') currentStep = 3;
-        const activeColor = '#161E54';
+        const activeColor = '#4D2FB2';
         const inactiveColor = '#E0E0E0';
         const successColor = '#107C41';
         if (isDivider) return step < currentStep ? successColor : (step === currentStep ? activeColor : inactiveColor);
@@ -672,6 +773,9 @@ export default {
             dateFormat: "d-m-Y",
             disableMobile: true,
             allowInput: false,
+            formatDate: (date, format, locale) => {
+            return this.formatToThaiDate(date);
+        },
             onReady: (d, s, i) => this.adjustYear(i),
             onMonthChange: (d, s, i) => this.adjustYear(i),
             onYearChange: (d, s, i) => this.adjustYear(i),
@@ -699,8 +803,8 @@ export default {
 </script>
 
 <style scoped>
-.bg-light-gray { background-color: #f3f4f6; min-height: 100vh; }
-.page-container { width: 100%; min-height: 100vh; transition: all 0.3s ease; background-color: #f3f4f6; }
+.bg-light-gray { background-color: var(--background); min-height: 100vh; }
+.page-container { width: 100%; min-height: 100vh; transition: all 0.3s ease; background-color: var(--background); }
 
 /* Responsive Layout */
 @media (min-width: 992px) {
@@ -719,7 +823,7 @@ export default {
 }
 .section-number {
   width: 32px; height: 32px;
-  background-color: #161e54; color: white;
+  background-color: var(--theme-primary); color: white;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-weight: bold; font-size: 0.9rem;
@@ -728,8 +832,8 @@ export default {
     transition: transform 0.2s;
 }
 .btn-save-custom:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(22, 30, 84, 0.3) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(77, 47, 178, 0.3) !important;
 }
 .cursor-pointer {
     cursor: pointer;

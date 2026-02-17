@@ -27,17 +27,17 @@
       <div class="d-flex align-center mt-3 mt-md-0" style="gap: 12px">
         <v-btn
           v-if="!isNew"
-          variant="outlined"
-          color="primary"
+          variant="flat"
+          color="#4D2FB2"
           prepend-icon="mdi-printer"
-          class="text-capitalize font-weight-bold"
+          class="text-capitalize font-weight-bold px-6"
           rounded="pill"
           @click="printPDF"
         >
           พิมพ์ใบส่งซ่อม
         </v-btn>
         <v-btn
-          variant="text"
+          variant="outlined"
           color="grey-darken-1"
           prepend-icon="mdi-arrow-left"
           class="text-capitalize font-weight-bold"
@@ -50,15 +50,13 @@
     </div>
 
     <div class="flex-grow-1 overflow-y-auto px-4 py-5 px-md-6 pb-5 mb-5 bg-light-gray">
-      
       <div v-if="loading" class="d-flex justify-content-center align-items-center" style="height: 50vh">
-        <div class="spinner-border text-primary" role="status"></div>
+        <div class="spinner-border text-theme" role="status"></div>
       </div>
 
       <div v-else class="mx-auto" style="max-width: 100%">
         <v-form ref="sentRepairForm">
-
-          <div class="bg-white rounded-lg pa-5 mb-4 section-block" v-if="!isNew">
+            <div class="bg-white rounded-lg pa-5 mb-4 section-block" v-if="!isNew">
             <h5 class="fw-bold mb-4 text-dark">สถานะการดำเนินงาน (Timeline)</h5>
             
             <div class="d-flex align-center justify-center py-4">
@@ -151,7 +149,7 @@
             <div class="row g-3">
               <div class="col-12 col-md-6">
                 <div class="text-subtitle-1 font-weight-bold mb-1">ประเภทอุปกรณ์ <span class="text-red">*</span></div>
-                <v-combobox
+                <v-select
                   v-model="formData.caseSType"
                   :items="typeOptions"
                   placeholder="เลือกประเภท"
@@ -159,7 +157,7 @@
                   density="comfortable"
                   bg-color="white"
                   :rules="[rules.required]"
-                ></v-combobox>
+                ></v-select>
               </div>
               <div class="col-12 col-md-6">
                 <div class="text-subtitle-1 font-weight-bold mb-1">ยี่ห้อ (Brand)</div>
@@ -268,17 +266,37 @@
       </div>
     </div>
 
+    <div style="position: fixed; left: -9999px; top: 0;">
+       <SentRepairReceipt :data="formData" />
+    </div>
+
     <div class="bg-white border-top py-3 px-4 px-md-6 d-flex align-items-center justify-content-end fixed-bottom-custom shadow-lg" style="z-index: 1040">
       <span class="text-muted small me-auto d-none d-md-inline">
-        <v-icon icon="mdi-information-outline" size="small" class="me-1"></v-icon>
-        ตรวจสอบความถูกต้องก่อนบันทึก
+        <template v-if="isDirty">
+          <v-icon
+            icon="mdi-alert-circle"
+            size="small"
+            class="me-2 text-danger"
+          ></v-icon>
+          <span class="text-danger font-weight-bold">
+            มีการแก้ไขข้อมูล อย่าลืมบันทึก!
+          </span>
+        </template>
+        <template v-else>
+          <v-icon
+            icon="mdi-information-outline"
+            size="small"
+            class="me-1"
+          ></v-icon>
+          ตรวจสอบความถูกต้องก่อนบันทึก
+        </template>
       </span>
 
       <button
         class="btn btn-primary px-4 py-2 rounded-pill d-flex align-items-center gap-2 shadow-sm btn-save-custom"
         @click="saveForm"
         :disabled="isSaving"
-        style="background-color: #161e54; border: none;"
+        style="background-color: #4D2FB2; border: none;"
       >
         <span v-if="isSaving" class="spinner-border spinner-border-sm"></span>
         <v-icon v-else icon="mdi-content-save" class="me-1"></v-icon>
@@ -294,9 +312,15 @@ import "flatpickr/dist/flatpickr.css";
 import { useDateHelper } from "@/composables/useDateHelper";
 import { sentRepairService } from "@/services/sentRepairService";
 import { validationRules as rules } from "@/utils/validationRules";
+import { swalTheme } from "@/utils/swalTheme";
+import html2pdf from "html2pdf.js";
+import SentRepairReceipt from "./SentRepairReceipt.vue";
 
 export default {
   name: 'TheCaseSentRepairDetail',
+  components: {
+    SentRepairReceipt,
+  },
   setup() {
     const { getTodayThaiDate, initDatePicker, destroyAllPickers } = useDateHelper();
     return {
@@ -310,6 +334,8 @@ export default {
       isNew: false,
       loading: false,
       isSaving: false,
+      isDirty: false,
+      originalFormData: null, // เก็บค่าเริ่มต้น
       
       typeOptions: [
         "ซ่อมคอมพิวเตอร์", "ซ่อมโน็ตบุ๊ค", "ซ่อมปริ้นเตอร์", "UPS",
@@ -329,7 +355,9 @@ export default {
         brokenSymptom: "",
         caseSEquipment: "",
         dateOfReceived: "",
-        caseSRecipient: ""
+        caseSRecipient: "",
+        // ✅ 1. เพิ่มตัวแปรนี้ เพื่อรับ ID ของเคสต้นทาง
+        refCaseId: null 
       },
       
       pickers: {},
@@ -348,17 +376,83 @@ export default {
     
     if (routeId === "new" || !routeId) {
       this.isNew = true;
-      this.formData.DateSOfSent = this.getTodayThaiDate(); // Default Date
-      this.$nextTick(() => this.initDatePickers());
+      this.formData.DateSOfSent = this.getTodayThaiDate();
+      
+      // ✅ 2. ตรวจสอบว่ามีข้อมูลส่งมาจากหน้ารับซ่อมหรือไม่ และเก็บค่า refCaseId
+      const query = this.$route.query;
+      if (query && query.refCaseId) {
+          
+          this.formData.refCaseId = query.refCaseId; // <--- สำคัญที่สุด เก็บ ID ต้นทางไว้
+
+          // Map ข้อมูลอื่นๆ ลงฟอร์ม
+          this.formData.caseSCusName = query.cusName || "";
+          this.formData.caseSType = query.type || null;
+          this.formData.caseSBrand = query.brand || "";
+          this.formData.caseSModel = query.model || "";
+          this.formData.caseSSN = query.sn || "";
+          this.formData.brokenSymptom = query.symptom || "";
+          this.formData.caseSEquipment = query.equipment || "";
+          
+            Swal.fire({
+              icon: 'info',
+              title: 'ดึงข้อมูลเรียบร้อย',
+              text: `สร้างงานส่งซ่อมจาก Case ID: ${query.refCaseId}`,
+              timer: 1500,
+              showConfirmButton: false
+            });
+      }
+
+      this.$nextTick(() => { 
+        this.initDatePickers();
+        // Simulating a delay to let form settle before taking snapshot
+        setTimeout(() => {
+          this.originalFormData = JSON.stringify(this.formData);
+        }, 500);
+      });
     } else {
       this.isNew = false;
       this.formData.caseSId = routeId;
       await this.fetchDetail(routeId);
     }
+    
+  },
+  watch: {
+    formData: {
+      handler(newVal) {
+        if (this.originalFormData) {
+          const currentData = JSON.stringify(newVal);
+          this.isDirty = currentData !== this.originalFormData;
+        }
+      },
+      deep: true,
+    },
   },
   beforeUnmount() {
     this.destroyAllPickers();
   },
+
+  beforeRouteLeave(to, from, next) {
+    if (this.isDirty) {
+      Swal.fire({
+        title: "มีการแก้ไขข้อมูลค้างอยู่",
+        text: "คุณต้องการออกจากหน้านี้โดยไม่บันทึกหรือไม่?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: 'ออกจากหน้านี้',
+        cancelButtonText: 'ยกเลิก',
+        ...swalTheme.danger
+      }).then((result) => {
+        if (result.isConfirmed) {
+          next();
+        } else {
+          next(false);
+        }
+      });
+    } else {
+      next();
+    }
+  },
+
   methods: {
     async fetchDetail(id) {
       this.loading = true;
@@ -370,10 +464,21 @@ export default {
         }
       } catch (err) {
         console.error("Fetch error:", err);
-        Swal.fire("Error", "ไม่สามารถโหลดข้อมูลได้", "error");
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "ไม่สามารถโหลดข้อมูลได้",
+          ...swalTheme.danger
+        });
       } finally {
         this.loading = false;
-        this.$nextTick(() => this.initDatePickers());
+        this.$nextTick(() => { 
+          this.initDatePickers();
+          // Snapshot for dirty check
+          setTimeout(() => {
+            this.originalFormData = JSON.stringify(this.formData);
+          }, 500);
+        });
       }
     },
 
@@ -384,7 +489,7 @@ export default {
             icon: 'warning',
             title: 'ข้อมูลไม่ครบถ้วน',
             text: 'กรุณากรอกข้อมูลในช่องที่มีเครื่องหมาย *',
-            confirmButtonColor: '#161E54'
+            ...swalTheme.confirm
         });
         return;
       }
@@ -392,6 +497,8 @@ export default {
       this.isSaving = true;
       try {
         const endpoint = this.isNew ? 'create' : 'update';
+        
+        // ✅ 3. Payload จะมี refCaseId ติดไปด้วยอัตโนมัติ เพราะเราเพิ่มใน data() แล้ว
         const payload = { ...this.formData };
 
         // Clean Empty Strings
@@ -402,6 +509,12 @@ export default {
         const res = await sentRepairService[endpoint](payload);
         
         if (res.data.message === "success") {
+            // Update snapshot
+            this.originalFormData = JSON.stringify(this.formData);
+
+            // ✨ เพิ่มบรรทัดนี้เพื่อเคลียร์สถานะแจ้งเตือนการแก้ไขข้อมูล ✨
+            this.isDirty = false;
+
             await Swal.fire({
                 icon: 'success',
                 title: 'บันทึกสำเร็จ!',
@@ -410,12 +523,22 @@ export default {
             });
             
             if (this.isNew) {
-                this.$router.replace({ name: 'TheCaseSentRepair' });
+                // ถ้ามี refCaseId (มาจากงานรับซ่อม) ให้กลับไปหน้ารับซ่อมต้นทาง เพื่อให้เห็นปุ่ม "ดูใบงานส่งซ่อม" ทันที
+                if (this.formData.refCaseId) {
+                     this.$router.go(-1); // ย้อนกลับไปหน้าเดิม
+                } else {
+                     this.$router.replace({ name: 'TheCaseSentRepair' });
+                }
             }
         }
       } catch (err) {
         console.error("Save error:", err);
-        Swal.fire("Error", "เกิดข้อผิดพลาดในการบันทึก", "error");
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "เกิดข้อผิดพลาดในการบันทึก",
+          ...swalTheme.danger
+        });
       } finally {
         this.isSaving = false;
       }
@@ -426,7 +549,7 @@ export default {
         let currentStep = 1;
         if (received) currentStep = 2;
 
-        const activeColor = '#161E54';
+        const activeColor = '#4D2FB2';
         const inactiveColor = '#E0E0E0';
         const successColor = '#107C41';
 
@@ -439,7 +562,6 @@ export default {
         }
     },
 
-    // --- Date Picker Logic ---
     initDatePickers() {
         this.initDatePicker('date-sent', this.formData.DateSOfSent, (newDate) => {
             this.formData.DateSOfSent = newDate;
@@ -471,50 +593,47 @@ export default {
             }
         }, 10);
     },
+
     async printPDF() {
+      this.isSaving = true;
       Swal.fire({
         title: "กำลังสร้างไฟล์ PDF...",
         allowOutsideClick: false,
         didOpen: () => {
           Swal.showLoading();
+          const loader = Swal.getPopup()?.querySelector(".swal2-loader");
+          if (loader) {
+            loader.style.borderColor = "#4D2FB2";
+            loader.style.borderTopColor = "#4D2FB2";
+          }
         },
       });
 
       try {
-        const response = await sentRepairService.print(this.formData.caseSId);
+        const element = document.getElementById('sent-receipt-content');
+        if (!element) throw new Error("ไม่พบแบบฟอร์มใบงาน");
 
-        if (response.data.type !== "application/pdf") {
-          const text = await response.data.text();
-          let errMsg = text;
-          try {
-            const json = JSON.parse(text);
-            errMsg = json.message || json.error || text;
-          } catch (e) {} 
+        const opt = {
+          margin:       0,
+          filename:     `Sent-Repair-${this.formData.caseSId}.pdf`,
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { scale: 2, useCORS: true },
+          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
 
-          throw new Error(`Server Error: ${errMsg}`);
-        }
-
-        const url = window.URL.createObjectURL(
-          new Blob([response.data], { type: "application/pdf" })
-        );
-        const link = document.createElement("a");
-        link.href = url;
-        link.setAttribute("download", `Sent-Repair-${this.formData.caseSId}.pdf`);
-        document.body.appendChild(link);
-        link.click();
-
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-
+        await html2pdf().set(opt).from(element).save();
+        
         Swal.close();
       } catch (error) {
         console.error("Print Error:", error);
         Swal.fire({
           icon: "error",
           title: "ออกใบรับซ่อมไม่สำเร็จ",
-          text: error.message || "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ",
-          confirmButtonColor: "#d33",
+          text: error.message,
+          ...swalTheme.danger
         });
+      } finally {
+        this.isSaving = false;
       }
     },
 
@@ -523,8 +642,8 @@ export default {
 </script>
 
 <style scoped>
-.bg-light-gray { background-color: #f3f4f6; min-height: 100vh; }
-.page-container { width: 100%; min-height: 100vh; transition: all 0.3s ease; background-color: #f3f4f6; }
+.bg-light-gray { background-color: var(--background); min-height: 100vh; }
+.page-container { width: 100%; min-height: 100vh; transition: all 0.3s ease; background-color: var(--background); }
 
 @media (min-width: 992px) {
   .page-container { padding-left: 280px !important; }
@@ -533,11 +652,7 @@ export default {
 @media (max-width: 991.98px) {
   .page-container { padding-left: 0 !important; padding-top: 60px !important; }
   .fixed-bottom-custom { left: 0 !important; width: 100% !important; position: fixed; bottom: 0; }
-  
-  /* ✅ เพิ่มกฎ CSS นี้เพื่อดัน Header ลงมา */
-  .sticky-header {
-    top: 60px !important;
-  }
+  .sticky-header { top: 60px !important; }
 }
 
 .section-block {
@@ -546,7 +661,7 @@ export default {
 }
 .section-number {
   width: 32px; height: 32px;
-  background-color: #161e54; color: white;
+  background-color: var(--theme-primary); color: white;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-weight: bold; font-size: 0.9rem;
@@ -555,7 +670,7 @@ export default {
     transition: transform 0.2s;
 }
 .btn-save-custom:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(22, 30, 84, 0.3) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(77, 47, 178, 0.3) !important;
 }
 </style>

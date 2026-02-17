@@ -8,6 +8,8 @@ import TheCaseProject from "@/components/TheCaseProject.vue"
 import TheCaseProjectDetail from "@/components/TheCaseProjectDetail.vue"
 import TheCaseSentRepair from "@/components/TheCaseSentRepair.vue"
 import TheCaseSentRepairDetail from "@/components/TheCaseSentRepairDetail.vue"
+import TheQuotation from "@/components/TheQuotation.vue"
+import TheQuotationDetail from "@/components/TheQuotationDetail.vue"
 
 const routes = [
   {
@@ -70,6 +72,19 @@ const routes = [
     path: '/caseSentRepair/:id',
     name: 'TheCaseSentRepairDetail',
     component: TheCaseSentRepairDetail,
+    meta: { requiresAuth: true },
+    props: true
+  },
+  {
+    path: '/quotation',
+    name: 'TheQuotation',
+    component: TheQuotation,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/quotation/:id',
+    name: 'TheQuotationDetail',
+    component: TheQuotationDetail,
     meta: { requiresAuth: true },
     props: true
   }

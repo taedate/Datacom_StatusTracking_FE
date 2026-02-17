@@ -13,25 +13,13 @@
 
       <div class="d-flex align-center" style="gap: 12px">
         <v-menu location="bottom end" transition="scale-transition">
-          <!-- <template v-slot:activator="{ props }">
-            <v-btn
-              color="#107C41"
-              prepend-icon="mdi-microsoft-excel"
-              variant="flat"
-              v-bind="props"
-              height="44"
-              class="text-capitalize px-6 font-weight-bold rounded-pill text-white shadow-sm-custom"
-            >
-              ส่งออกข้อมูล
-            </v-btn>
-          </template> -->
           <v-list density="compact">
             <v-list-item @click="exportData" prepend-icon="mdi-download" title="Export Excel"></v-list-item>
           </v-list>
         </v-menu>
 
         <v-btn
-          color="#161E54"
+          color="#4D2FB2"
           prepend-icon="mdi-plus"
           :to="{ name: 'TheCaseRepairDetail', params: { id: 'new' } }" 
           elevation="0"
@@ -47,7 +35,7 @@
     <div class="px-6 py-5 bg-white border-bottom">
       <div class="d-flex align-center mb-4">
         <div class="bg-primary-lighten-5 rounded-circle pa-2 mr-3 d-flex align-center justify-center">
-          <v-icon icon="mdi-filter-variant" color="#161E54" size="20"></v-icon>
+          <v-icon icon="mdi-filter-variant" color="#4D2FB2" size="20"></v-icon>
         </div>
         <div>
           <div class="text-subtitle-2 font-weight-bold text-grey-darken-3">
@@ -67,7 +55,7 @@
             prepend-inner-icon="mdi-magnify"
             variant="outlined"
             density="compact"
-            color="#161e54"
+            color="#4D2FB2"
             bg-color="grey-lighten-5"
             base-color="grey-lighten-2"
             clearable
@@ -84,7 +72,7 @@
             prepend-inner-icon="mdi-list-status"
             variant="outlined"
             density="compact"
-            color="#161e54"
+            color="#4D2FB2"
             bg-color="grey-lighten-5"
             base-color="grey-lighten-2"
             clearable
@@ -101,7 +89,7 @@
             prepend-inner-icon="mdi-tools"
             variant="outlined"
             density="compact"
-            color="#161e54"
+            color="#4D2FB2"
             bg-color="grey-lighten-5"
             base-color="grey-lighten-2"
             clearable
@@ -118,7 +106,7 @@
             prepend-inner-icon="mdi-calendar-range"
             variant="outlined"
             density="compact"
-            color="#161e54"
+            color="#4D2FB2"
             bg-color="grey-lighten-5"
             base-color="grey-lighten-2"
             hide-details="auto"
@@ -185,9 +173,22 @@
             </div>
         </template>
 
-        <template v-slot:[`item.dateBeforePicUp`]="{ item }">
-            <div class="text-body-2 text-grey-darken-2">
-                {{ item.dateBeforePicUp }}
+        <template v-slot:[`item.refSentRepairId`]="{ item }">
+            <div v-if="item.refSentRepairId">
+                <v-chip
+                  color="warning"
+                  variant="tonal"
+                  size="small"
+                  class="font-weight-bold cursor-pointer"
+                  :to="{ name: 'TheCaseSentRepairDetail', params: { id: item.refSentRepairId } }"
+                  style="border-color: var(--warning);"
+                >
+                  <v-icon start icon="mdi-truck-delivery-outline" size="small"></v-icon>
+                  {{ item.refSentRepairId }}
+                </v-chip>
+            </div>
+            <div v-else class="text-grey-lighten-1 text-caption pl-2">
+                -
             </div>
         </template>
 
@@ -203,7 +204,7 @@
                 :to="{ name: 'TheCaseRepairDetail', params: { id: item.caseId } }"
                 prepend-icon="mdi-eye-outline" 
                 value="view" 
-                active-color="primary"
+                active-color="#4D2FB2"
               >
                 <v-list-item-title class="text-body-2">ดูรายละเอียด</v-list-item-title>
               </v-list-item>
@@ -242,9 +243,7 @@ import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.css";
 import { Thai } from "flatpickr/dist/l10n/th.js";
 import Swal from 'sweetalert2';
-
-// ตั้งค่า API Base URL
-const API_URL = "http://127.0.0.1:3333";
+import { swalTheme } from "@/utils/swalTheme";
 
 export default {
   name: "TheCaseRepair",
@@ -259,6 +258,7 @@ export default {
       statusList: [
         "รอรับเครื่อง",
         "รับเครื่องแล้ว",
+        "ส่งซ่อมอยู่",
         "กำลังซ่อม",
         "ซ่อมเสร็จ",
         "ส่งมอบ"
@@ -284,7 +284,10 @@ export default {
         { title: "ประเภท", key: "caseType", width: "10%" },
         { title: "สถานะ", key: "caseStatus", width: "10%" },
         { title: "วันที่รับเครื่อง", key: "datePickUp", width: "10%" },
-        { title: "วันที่ลูกค้าติดต่อ", key: "dateBeforePicUp", width: "10%" },
+        
+        // ✅ ส่วนที่แก้ไข: เปลี่ยนหัวตารางและ Key
+        { title: "ใบส่งซ่อม (Ref)", key: "refSentRepairId", width: "12%", sortable: false },
+        
         { title: "", key: "actions", sortable: false, align: "end" },
       ],
     };
@@ -317,6 +320,7 @@ export default {
         if (status.includes('รอ') || status.includes('Wait')) return 'warning';
         if (status.includes('ซ่อม') || status.includes('Process')) return 'info';
         if (status.includes('รับเครื่องแล้ว')) return 'primary';
+        if (status.includes('ส่งซ่อมอยู่')) return 'secondary'; // สีม่วงอ่อน
         if (status.includes('ยกเลิก') || status.includes('Cancel')) return 'error';
         return 'grey-darken-1';
     },
@@ -375,27 +379,41 @@ export default {
         text: `ต้องการลบ Case ID: ${item.caseId} หรือไม่?`,
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: '#6c757d',
         confirmButtonText: 'ลบ',
         cancelButtonText: 'ยกเลิก',
         reverseButtons: false, 
-        focusCancel: true
+        focusCancel: true,
+        ...swalTheme.danger
       });
 
       if (result.isConfirmed) {
         try {
           const res = await axios.post(`${import.meta.env.VITE_API_URL}/delete-case`, { caseId: item.caseId });
-          await Swal.fire('ลบเสร็จสิ้น', 'ข้อมูลถูกลบเรียบร้อยแล้ว', 'success');
+          await Swal.fire({
+            icon: 'success',
+            title: 'ลบเสร็จสิ้น',
+            text: 'ข้อมูลถูกลบเรียบร้อยแล้ว',
+            ...swalTheme.info
+          });
           this.loadItems({ page: 1, itemsPerPage: this.itemsPerPage });
         } catch (err) {
-           Swal.fire('Error', 'ไม่สามารถลบข้อมูลได้', 'error');
+           Swal.fire({
+             icon: 'error',
+             title: 'Error',
+             text: 'ไม่สามารถลบข้อมูลได้',
+             ...swalTheme.danger
+           });
         }
       }
     },
 
     exportData() {
-        Swal.fire('Info', 'ฟีเจอร์นี้ต้องเชื่อมต่อ API Export', 'info');
+        Swal.fire({
+          icon: 'info',
+          title: 'Info',
+          text: 'ฟีเจอร์นี้ต้องเชื่อมต่อ API Export',
+          ...swalTheme.info
+        });
     },
 
     initThaiDatePicker() {
@@ -475,7 +493,6 @@ export default {
     padding-left: 0 !important;
   }
   
-  /* ✅ เพิ่มกฎ CSS นี้เพื่อดัน Header ลงมา 60px เมื่ออยู่บนมือถือ */
   .sticky-header {
     top: 60px !important;
   }
@@ -495,19 +512,19 @@ export default {
 }
 
 :deep(.minimal-table thead tr th) {
-  background-color: #ecf6ff !important;
-  color: #161e54 !important;
+  background-color: var(--theme-tint-1) !important;
+  color: var(--theme-primary) !important;
   font-weight: 700 !important;
   font-size: 0.95rem !important;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   height: 60px !important;
-  border-bottom: 1px solid #cce5ff !important;
+  border-bottom: 1px solid var(--theme-border) !important;
   white-space: nowrap;
 }
 
 :deep(.minimal-table tbody tr:hover td) {
-  background-color: #f8fbff !important;
+  background-color: var(--theme-tint-1) !important;
   cursor: pointer;
 }
 
@@ -523,7 +540,7 @@ export default {
 }
 
 .bg-primary-lighten-5 {
-  background-color: #f0f4ff !important;
+  background-color: var(--theme-tint-1) !important;
 }
 
 .cursor-pointer {

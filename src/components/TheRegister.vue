@@ -101,7 +101,7 @@
 
                                 <button
                                     type="submit"
-                                    class="btn btn-secondary w-100 mb-3 text-light"
+                                    class="btn btn-theme w-100 mb-3"
                                     :disabled="isLoading"
                                 >
                                     {{

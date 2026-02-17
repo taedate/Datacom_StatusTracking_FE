@@ -31,7 +31,7 @@
         </v-menu>
 
         <v-btn
-          color="#161E54"
+          color="#4D2FB2"
           prepend-icon="mdi-plus"
           elevation="0"
           height="44"
@@ -48,7 +48,7 @@
       
       <div class="d-flex align-center mb-4">
         <div class="bg-primary-lighten-5 rounded-circle pa-2 mr-3 d-flex align-center justify-center">
-          <v-icon icon="mdi-filter-variant" color="#161E54" size="20"></v-icon>
+          <v-icon icon="mdi-filter-variant" color="#4D2FB2" size="20"></v-icon>
         </div>
         <div>
           <div class="text-subtitle-2 font-weight-bold text-grey-darken-3">
@@ -68,7 +68,7 @@
             prepend-inner-icon="mdi-magnify"
             variant="outlined"
             density="compact"
-            color="#161e54"
+            color="#4D2FB2"
             bg-color="grey-lighten-5"
             clearable
             hide-details="auto"
@@ -84,7 +84,7 @@
             prepend-inner-icon="mdi-list-status"
             variant="outlined"
             density="compact"
-            color="#161e54"
+            color="#4D2FB2"
             bg-color="grey-lighten-5"
             clearable
             hide-details="auto"
@@ -100,7 +100,7 @@
             prepend-inner-icon="mdi-calendar-range"
             variant="outlined"
             density="compact"
-            color="#161e54"
+            color="#4D2FB2"
             bg-color="grey-lighten-5"
             hide-details="auto"
             readonly
@@ -164,7 +164,7 @@
                 :to="{ name: 'TheCaseProjectDetail', params: { id: item.pId } }"
                 prepend-icon="mdi-eye-outline" 
                 value="view" 
-                active-color="primary"
+                active-color="#4D2FB2"
               >
                 <v-list-item-title class="text-body-2">ดูรายละเอียด</v-list-item-title>
               </v-list-item>
@@ -184,6 +184,7 @@
 <script>
 import axios from "axios";
 import Swal from "sweetalert2";
+import { swalTheme } from "@/utils/swalTheme";
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.css";
 import { Thai } from "flatpickr/dist/l10n/th.js";
@@ -234,6 +235,7 @@ export default {
     getStatusColor(status) {
         if (status === 'เสร็จสิ้น') return 'success';
         if (status === 'กำลังดำเนินการ') return 'info';
+        if (status === 'ยกเลิก') return 'error';
         return 'grey-darken-1'; 
     },
 
@@ -273,17 +275,27 @@ export default {
             showCancelButton: true,
             confirmButtonText: 'ลบ',
             cancelButtonText: 'ยกเลิก',
-            confirmButtonColor: '#d33',
-            reverseButtons: true
+          reverseButtons: true,
+          ...swalTheme.danger
         });
 
         if (result.isConfirmed) {
             try {
                 await axios.post(`${import.meta.env.VITE_API_URL}/delete-project`, { pId: item.pId });
-                Swal.fire('สำเร็จ', 'ลบข้อมูลแล้ว', 'success');
+                Swal.fire({
+                  icon: 'success',
+                  title: 'สำเร็จ',
+                  text: 'ลบข้อมูลแล้ว',
+                  ...swalTheme.info
+                });
                 this.loadItems({ page: 1, itemsPerPage: this.itemsPerPage });
             } catch (err) {
-                Swal.fire('Error', 'ลบไม่สำเร็จ', 'error');
+                Swal.fire({
+                  icon: 'error',
+                  title: 'Error',
+                  text: 'ลบไม่สำเร็จ',
+                  ...swalTheme.danger
+                });
             }
         }
     },
@@ -359,19 +371,19 @@ export default {
 }
 
 :deep(.minimal-table thead tr th) {
-  background-color: #ecf6ff !important;
-  color: #161e54 !important;
+  background-color: var(--theme-tint-1) !important;
+  color: var(--theme-primary) !important;
   font-weight: 700 !important;
   font-size: 0.95rem !important;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   height: 60px !important;
-  border-bottom: 1px solid #cce5ff !important;
+  border-bottom: 1px solid var(--theme-border) !important;
   white-space: nowrap;
 }
 
 :deep(.minimal-table tbody tr:hover td) {
-  background-color: #f8fbff !important;
+  background-color: var(--theme-tint-1) !important;
   cursor: pointer;
 }
 
@@ -391,6 +403,6 @@ export default {
 
 /* ✅ Class พื้นหลัง */
 .bg-primary-lighten-5 {
-  background-color: #f0f4ff !important;
+  background-color: var(--theme-tint-1) !important;
 }
 </style>
