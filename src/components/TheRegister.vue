@@ -41,8 +41,8 @@
                         <div class="card-body p-4">
                             <h3 class="fw-bold mb-2">ลงทะเบียน</h3>
                             <p class="text-muted mb-4">
-                                ลงทะเบียนเข้าใช้งาน <br />
-                                กรอกเพียง Username และ Password
+                                สมัครสมาชิกผ่านลิงก์เชิญ <br />
+                                ตั้งรหัสผ่านเพื่อเข้าใช้งานระบบ
                             </p>
 
                             <form @submit.prevent="handleSubmit">
@@ -56,8 +56,12 @@
                                             class="form-control"
                                             placeholder="ชื่อผู้ใช้งาน (Username)"
                                             v-model.trim="newUser.userName"
+                                            :readonly="inviteChecked"
                                             required
                                         />
+                                    </div>
+                                    <div class="form-text" v-if="inviteChecked">
+                                        Username ถูกกำหนดจากลิงก์เชิญ
                                     </div>
                                 </div>
 
@@ -87,12 +91,16 @@
                                             ></i>
                                         </button>
                                     </div>
+                                    <div class="form-text">
+                                        รหัสผ่านต้องมีอย่างน้อย 8 ตัว และต้องมีตัวพิมพ์ใหญ่,
+                                        ตัวพิมพ์เล็ก และตัวเลข
+                                    </div>
                                 </div>
 
                                 <div class="text-end mb-4">
                                     <span class="small me-1">มีผู้ใช้ในระบบแล้ว ?</span>
                                     <router-link
-                                        to="/"
+                                        to="/login"
                                         class="small text-decoration-none"
                                     >
                                         เข้าสู่ระบบ
@@ -102,12 +110,14 @@
                                 <button
                                     type="submit"
                                     class="btn btn-theme w-100 mb-3"
-                                    :disabled="isLoading"
+                                    :disabled="isLoading || inviteValidating || !inviteChecked"
                                 >
                                     {{
                                         isLoading
                                             ? "กำลังสร้างบัญชี..."
-                                            : "ลงทะเบียน"
+                                            : inviteValidating
+                                              ? "กำลังตรวจสอบลิงก์..."
+                                              : "ลงทะเบียน"
                                     }}
                                 </button>
                             </form>
@@ -135,17 +145,107 @@ export default {
             backendMessage: null,
             isLoading: false,
             showPassword: false,
+            inviteToken: "",
+            inviteChecked: false,
+            inviteValidating: true,
         };
     },
 
+    created() {
+        this.initInviteFlow();
+    },
+
     methods: {
+        validatePassword(password) {
+            if (password.length < 8) {
+                return "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร";
+            }
+
+            if (!/[A-Z]/.test(password)) {
+                return "รหัสผ่านต้องมีตัวพิมพ์ใหญ่ (A-Z) อย่างน้อย 1 ตัว";
+            }
+
+            if (!/[a-z]/.test(password)) {
+                return "รหัสผ่านต้องมีตัวพิมพ์เล็ก (a-z) อย่างน้อย 1 ตัว";
+            }
+
+            if (!/[0-9]/.test(password)) {
+                return "รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว";
+            }
+
+            return null;
+        },
+
+        getErrorMessage(err) {
+            const code = err?.response?.data?.code;
+
+            if (code === "INVITE_EXPIRED") return "ลิงก์เชิญหมดอายุแล้ว";
+            if (code === "INVITE_ALREADY_USED") return "ลิงก์เชิญนี้ถูกใช้งานแล้ว";
+            if (code === "INVITE_REVOKED") return "ลิงก์เชิญนี้ถูกยกเลิกแล้ว";
+            if (code === "INVITE_NOT_FOUND") return "ไม่พบลิงก์เชิญนี้";
+            if (code === "PASSWORD_POLICY_FAILED") return "รหัสผ่านไม่ผ่านเงื่อนไขความปลอดภัย";
+            if (code === "USERNAME_ALREADY_EXISTS") return "ชื่อผู้ใช้งานนี้มีอยู่ในระบบแล้ว";
+
+            return err?.response?.data?.detail || "เกิดข้อผิดพลาดในการลงทะเบียน";
+        },
+
+        async initInviteFlow() {
+            this.inviteToken = this.$route.query.token || "";
+
+            if (!this.inviteToken) {
+                this.backendMessage = "ต้องสมัครผ่านลิงก์เชิญที่มี token";
+                this.inviteValidating = false;
+                return;
+            }
+
+            this.inviteValidating = true;
+            this.backendMessage = null;
+
+            try {
+                const { data } = await axios.get(
+                    `${import.meta.env.VITE_API_URL}/invites/validate`,
+                    {
+                        params: { token: this.inviteToken },
+                    }
+                );
+
+                const invitedUserName =
+                    data?.payload?.invitedUserName || data?.payload?.userName || "";
+
+                if (invitedUserName) {
+                    this.newUser.userName = invitedUserName;
+                }
+
+                this.inviteChecked = true;
+            } catch (err) {
+                this.backendMessage = this.getErrorMessage(err);
+                this.inviteChecked = false;
+            } finally {
+                this.inviteValidating = false;
+            }
+        },
+
         togglePassword() {
             this.showPassword = !this.showPassword;
         },
 
         async handleSubmit() {
+            if (!this.inviteToken || !this.inviteChecked) {
+                this.backendMessage = "ลิงก์เชิญไม่ถูกต้องหรือหมดอายุ";
+                return;
+            }
+
             if (!this.newUser.userName || !this.newUser.password) {
                 this.backendMessage = "กรุณากรอกข้อมูลให้ครบถ้วน";
+                return;
+            }
+
+            const passwordValidationMessage = this.validatePassword(
+                this.newUser.password
+            );
+
+            if (passwordValidationMessage) {
+                this.backendMessage = passwordValidationMessage;
                 return;
             }
 
@@ -153,8 +253,13 @@ export default {
             this.backendMessage = null;
 
             try {
-                // ส่งไปที่ endpoint /register
-                await axios.post(`${import.meta.env.VITE_API_URL}/register`, this.newUser);
+                await axios.post(
+                    `${import.meta.env.VITE_API_URL}/register-by-invite`,
+                    {
+                        token: this.inviteToken,
+                        password: this.newUser.password,
+                    }
+                );
                 this.backendMessage = "success";
 
                 // Reset form
@@ -162,12 +267,10 @@ export default {
 
                 // Redirect
                 setTimeout(() => {
-                    this.$router.push({ path: "/" }); // หรือชื่อ route 'TheLogin'
+                    this.$router.push({ path: "/login" });
                 }, 1500);
             } catch (err) {
-                this.backendMessage =
-                    err.response?.data?.error ||
-                    "เกิดข้อผิดพลาดในการลงทะเบียน";
+                this.backendMessage = this.getErrorMessage(err);
             } finally {
                 this.isLoading = false;
             }

@@ -4,7 +4,6 @@
     <div>
       <router-view />
     </div>
-    <!-- https://datacom-be.onrender.com -->
   </div>
 </template>
 

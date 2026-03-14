@@ -57,7 +57,7 @@
             density="compact"
             color="#4D2FB2"
             bg-color="grey-lighten-5"
-            base-color="grey-lighten-2"
+            
             clearable
             hide-details="auto"
             class="rounded-lg"
@@ -74,7 +74,7 @@
             density="compact"
             color="#4D2FB2"
             bg-color="grey-lighten-5"
-            base-color="grey-lighten-2"
+            
             clearable
             hide-details="auto"
             class="rounded-lg"
@@ -91,7 +91,7 @@
             density="compact"
             color="#4D2FB2"
             bg-color="grey-lighten-5"
-            base-color="grey-lighten-2"
+            
             clearable
             hide-details="auto"
             class="rounded-lg"
@@ -108,7 +108,7 @@
             density="compact"
             color="#4D2FB2"
             bg-color="grey-lighten-5"
-            base-color="grey-lighten-2"
+            
             hide-details="auto"
             clearable
             readonly
@@ -227,7 +227,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import apiClient from "@/services/authService";
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.css";
 import { Thai } from "flatpickr/dist/l10n/th.js";
@@ -351,7 +351,7 @@ export default {
             sort_order: sortOrder
         };
 
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/get-sent-repair-info`, { params });
+        const res = await apiClient.get('/get-sent-repair-info', { params });
         
         if (res.data.message === "success") {
           this.serverItems = res.data.data;
@@ -379,7 +379,7 @@ export default {
 
       if (result.isConfirmed) {
         try {
-          await axios.post(`${import.meta.env.VITE_API_URL}/delete-sent-repair`, { caseSId: item.caseSId });
+          await apiClient.post('/delete-sent-repair', { caseSId: item.caseSId });
           await Swal.fire({
             icon: 'success',
             title: 'ลบเสร็จสิ้น',

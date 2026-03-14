@@ -31,7 +31,7 @@
       >
         <v-btn
           v-if="formData.refSentRepairId"
-          color="info"
+          color="warning"
           variant="flat"
           prepend-icon="mdi-link-variant"
           class="text-capitalize font-weight-bold flex-grow-1 flex-md-grow-0"
@@ -47,7 +47,7 @@
         <v-btn
           v-else-if="!isNew"
           variant="flat"
-          color="warning"
+          color="info"
           prepend-icon="mdi-truck-delivery-outline"
           class="text-capitalize font-weight-bold flex-grow-1 flex-md-grow-0"
           rounded="pill"
@@ -101,7 +101,7 @@
             <h5 class="fw-bold mb-4 text-dark">สถานะงานซ่อม (Workflow)</h5>
 
             <div class="w-100 overflow-x-auto py-2 mb-4">
-              <div class="d-flex align-center px-2" style="min-width: 900px">
+              <div class="d-flex align-center px-2" style="min-width: 1050px">
                 <div
                   class="text-center position-relative"
                   style="z-index: 2; min-width: 100px"
@@ -161,10 +161,14 @@
                     size="44"
                     class="mb-2 border elevation-1"
                   >
-                    <v-icon icon="mdi-wrench" color="white" size="22"></v-icon>
+                    <v-icon
+                      icon="mdi-package-variant-closed"
+                      color="white"
+                      size="22"
+                    ></v-icon>
                   </v-avatar>
                   <div class="text-caption font-weight-bold text-no-wrap">
-                    กำลังซ่อม
+                    รออะไหล่
                   </div>
                 </div>
                 <v-divider
@@ -182,14 +186,10 @@
                     size="44"
                     class="mb-2 border elevation-1"
                   >
-                    <v-icon
-                      icon="mdi-check-circle-outline"
-                      color="white"
-                      size="22"
-                    ></v-icon>
+                    <v-icon icon="mdi-wrench" color="white" size="22"></v-icon>
                   </v-avatar>
                   <div class="text-caption font-weight-bold text-no-wrap">
-                    ซ่อมเสร็จ
+                    กำลังซ่อม
                   </div>
                 </div>
                 <v-divider
@@ -204,6 +204,31 @@
                 >
                   <v-avatar
                     :color="getStepColor(5)"
+                    size="44"
+                    class="mb-2 border elevation-1"
+                  >
+                    <v-icon
+                      icon="mdi-check-circle-outline"
+                      color="white"
+                      size="22"
+                    ></v-icon>
+                  </v-avatar>
+                  <div class="text-caption font-weight-bold text-no-wrap">
+                    ซ่อมเสร็จ
+                  </div>
+                </div>
+                <v-divider
+                  :color="getStepColor(6, true)"
+                  class="border-opacity-100 mx-2 flex-grow-1"
+                  thickness="3"
+                ></v-divider>
+
+                <div
+                  class="text-center position-relative"
+                  style="z-index: 2; min-width: 100px"
+                >
+                  <v-avatar
+                    :color="getStepColor(6)"
                     size="44"
                     class="mb-2 border elevation-1"
                   >
@@ -552,7 +577,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import apiClient from "@/services/authService";
 import Swal from "sweetalert2";
 import { swalTheme } from "@/utils/swalTheme";
 import flatpickr from "flatpickr";
@@ -575,9 +600,11 @@ export default {
       isDirty: false,
       originalFormData: null, // เก็บค่าเริ่มต้น
 
+      // เพิ่ม "รออะไหล่" เข้ามาใน statusOptions
       statusOptions: [
         "รอรับเครื่อง",
         "รับเครื่องแล้ว",
+        "รออะไหล่",
         "กำลังซ่อม",
         "ซ่อมเสร็จ",
         "ส่งมอบ",
@@ -636,7 +663,6 @@ export default {
       this.formData.datePickUp = this.getTodayThaiDate();
       this.$nextTick(() => { 
         this.initDatePickers();
-        // Simulating a delay to let form settle before taking snapshot
         setTimeout(() => {
           this.originalFormData = JSON.stringify(this.formData);
         }, 500);
@@ -688,10 +714,9 @@ export default {
 
   methods: {
     sendToExternalRepair() {
-      // 1. เตรียมข้อมูลที่จะส่งไป
       const queryData = {
-        refCaseId: this.formData.caseId, // อ้างอิงว่ามาจากเคสไหน
-        cusName: `${this.formData.cusFirstName} ${this.formData.cusLastName}`, // รวมชื่อ-สกุล
+        refCaseId: this.formData.caseId, 
+        cusName: `${this.formData.cusFirstName} ${this.formData.cusLastName}`,
         type: this.formData.caseType,
         brand: this.formData.caseBrand,
         model: this.formData.caseModel,
@@ -700,18 +725,17 @@ export default {
         equipment: this.formData.caseEquipment,
       };
 
-      // 2. สั่งเปลี่ยนหน้าพร้อมแนบข้อมูลไปด้วย
       this.$router.push({
-        name: "TheCaseSentRepairDetail", // ตรวจสอบชื่อ Route ใน router/index.js ให้ตรงนะครับ
-        params: { id: "new" }, // แจ้งว่าเป็นงานใหม่
-        query: queryData, // แนบข้อมูลไป
+        name: "TheCaseSentRepairDetail", 
+        params: { id: "new" }, 
+        query: queryData, 
       });
     },
     async fetchDetail(id) {
       this.loading = true;
       try {
-        const res = await axios.get(
-          `${import.meta.env.VITE_API_URL}/get-case-detail/${id}`
+        const res = await apiClient.get(
+          `/get-case-detail/${id}`
         );
         if (res.data.message === "success") {
           const data = res.data.data;
@@ -751,7 +775,6 @@ export default {
         this.loading = false;
         this.$nextTick(() => {
           this.initDatePickers();
-          // Simulating a delay to let form settle before taking snapshot
           setTimeout(() => {
             this.originalFormData = JSON.stringify(this.formData);
           }, 500);
@@ -774,18 +797,15 @@ export default {
       this.isSaving = true;
       try {
         const endpoint = this.isNew
-          ? `${import.meta.env.VITE_API_URL}/create-case`
-          : `${import.meta.env.VITE_API_URL}/update-case`;
+          ? '/create-case'
+          : '/update-case';
         const payload = { ...this.formData };
 
-        const res = await axios.post(endpoint, payload);
+        const res = await apiClient.post(endpoint, payload);
 
         if (res.data.message === "success") {
           this.statusChanged = false;
-          // Update the snapshot so isDirty becomes false
           this.originalFormData = JSON.stringify(this.formData);
-          
-          // ✨ เพิ่มบรรทัดนี้เพื่อเคลียร์สถานะแจ้งเตือน ✨
           this.isDirty = false; 
           
           await Swal.fire({
@@ -867,6 +887,8 @@ export default {
           return "teal";
         case "กำลังซ่อม":
           return "info";
+        // เพิ่มสีให้กับสถานะ "รออะไหล่"
+        case "รออะไหล่":
         case "รอสินค้า":
           return "warning";
         case "รับเครื่องแล้ว":
@@ -884,11 +906,13 @@ export default {
       const status = this.formData.caseStatus;
       let currentStep = 1;
 
+      // จัดลำดับสถานะใหม่ ให้ "รออะไหล่" เป็นลำดับที่ 3
       if (status === "ยกเลิก") currentStep = 0;
-      if (status === "รับเครื่องแล้ว") currentStep = 2;
-      else if (status === "กำลังซ่อม" || status === "รอสินค้า") currentStep = 3;
-      else if (status === "ซ่อมเสร็จ") currentStep = 4;
-      else if (status === "ส่งมอบ") currentStep = 5;
+      else if (status === "รับเครื่องแล้ว") currentStep = 2;
+      else if (status === "รออะไหล่" || status === "รอสินค้า") currentStep = 3;
+      else if (status === "กำลังซ่อม") currentStep = 4;
+      else if (status === "ซ่อมเสร็จ") currentStep = 5;
+      else if (status === "ส่งมอบ") currentStep = 6;
 
       const activeColor = "#4D2FB2";
       const inactiveColor = "#E0E0E0";
@@ -980,7 +1004,6 @@ export default {
       this.formData.cusPhone = event.target.value.replace(/[^0-9]/g, "");
     },
 
-    // ✅ ฟังก์ชัน Print PDF ใหม่ (Client-Side)
     async printPDF() {
       Swal.fire({
         title: "กำลังสร้างไฟล์ PDF...",
@@ -996,20 +1019,18 @@ export default {
       });
 
       try {
-        // 1. หา Element ที่ซ่อนอยู่ (จาก RepairReceipt.vue)
         const element = document.getElementById("receipt-content");
         if (!element) throw new Error("ไม่พบแบบฟอร์มใบงาน");
 
-        // 2. ตั้งค่า html2pdf
         const opt = {
           margin: 0,
           filename: `Repair-${this.formData.caseId}.pdf`,
           image: { type: "jpeg", quality: 0.98 },
           html2canvas: { scale: 2, useCORS: true },
+          pagebreak: { mode: ["css"] },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
         };
 
-        // 3. สั่งสร้างไฟล์ตรงนี้เลย (ไม่มียิงไป Backend)
         await html2pdf().set(opt).from(element).save();
 
         Swal.close();
@@ -1028,6 +1049,7 @@ export default {
 </script>
 
 <style scoped>
+/* สไตล์ยังคงเหมือนเดิม */
 .bg-light-gray {
   background-color: var(--background);
   min-height: 100vh;

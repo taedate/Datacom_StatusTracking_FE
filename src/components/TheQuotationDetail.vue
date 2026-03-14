@@ -481,13 +481,27 @@
                 >
                   ชื่อลูกค้า/บริษัท
                 </div>
-                <v-text-field
+                <v-combobox
                   v-model="formData.customerName"
+                  v-model:search="customerSearchText"
+                  :items="customerSuggestions"
+                  item-title="customerName"
+                  item-value="customerName"
+                  :no-filter="true"
+                  :loading="isCustomerSuggestLoading"
+                  :hide-no-data="(customerSearchText || '').length < 1"
+                  no-data-text="ไม่พบข้อมูลลูกค้า"
                   placeholder="ระบุชื่อบริษัทหรือลูกค้า"
+                  persistent-placeholder
                   variant="outlined"
                   density="comfortable"
+                  clearable
+                  autocomplete="off"
                   hide-details
-                ></v-text-field>
+                  @update:search="onCustomerSearchInput"
+                  @update:model-value="onCustomerNameSelected"
+                  @click:clear="onCustomerCleared"
+                ></v-combobox>
               </div>
               <div class="col-12 col-md-4">
                 <div
@@ -1317,6 +1331,10 @@ export default {
         "เดือน",
       ],
       formData: createDefaultData(),
+      customerSearchText: "",
+      customerSuggestions: [],
+      isCustomerSuggestLoading: false,
+      customerSuggestTimer: null,
       previousStatus: "ออกใบเสนอราคา",
       statusChanged: false,
       activeTab: 0,
@@ -1344,6 +1362,8 @@ export default {
     },
   },
   mounted() {
+    this.customerSearchText = "";
+    this.customerSuggestions = [];
     if (!this.isNew) this.fetchDocument();
     this.previousStatus = this.formData.docStatus;
     this.$nextTick(() => {
@@ -1352,6 +1372,10 @@ export default {
   },
   beforeUnmount() {
     Object.values(this.pickers).forEach((fp) => fp && fp.destroy());
+    if (this.customerSuggestTimer) {
+      clearTimeout(this.customerSuggestTimer);
+      this.customerSuggestTimer = null;
+    }
   },
 
   beforeRouteLeave(to, from, next) {
@@ -1377,6 +1401,106 @@ export default {
   },
 
   methods: {
+    resetCustomerDetailFields() {
+      this.formData.customerTaxId = "";
+      this.formData.customerPhone = "";
+      this.formData.customerAddress = "";
+    },
+
+    onCustomerCleared() {
+      this.formData.customerName = "";
+      this.customerSearchText = "";
+      this.customerSuggestions = [];
+      this.resetCustomerDetailFields();
+    },
+
+    onCustomerSearchInput(value) {
+      this.customerSearchText = value || "";
+
+      if (this.customerSuggestTimer) {
+        clearTimeout(this.customerSuggestTimer);
+      }
+
+      const keyword = (value || "").trim();
+      if (keyword.length < 1) {
+        this.customerSuggestions = [];
+        return;
+      }
+
+      this.customerSuggestTimer = setTimeout(() => {
+        this.fetchCustomerSuggestions(keyword);
+      }, 350);
+    },
+
+    onCustomerNameSelected(selectedName) {
+      if (!selectedName) {
+        this.onCustomerCleared();
+        return;
+      }
+
+      const pickedName =
+        typeof selectedName === "string"
+          ? selectedName
+          : selectedName?.customerName || "";
+      if (!pickedName) {
+        this.onCustomerCleared();
+        return;
+      }
+
+      const selected = this.customerSuggestions.find(
+        (item) => (item.customerName || "").toLowerCase() === pickedName.toLowerCase()
+      );
+      if (!selected) return;
+
+      this.formData.customerName = selected.customerName || pickedName;
+      this.formData.customerTaxId = selected.customerTaxId || "";
+      this.formData.customerPhone = selected.customerPhone || "";
+      this.formData.customerAddress = selected.customerAddress || "";
+    },
+
+    async fetchCustomerSuggestions(keyword) {
+      this.isCustomerSuggestLoading = true;
+      try {
+        const response = await apiClient.get("/quotation/customers/suggest", {
+          params: {
+            q: keyword,
+            limit: 10,
+          },
+        });
+
+        const payload = response?.data;
+        const rows = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.data)
+          ? payload.data
+          : Array.isArray(payload?.rows)
+          ? payload.rows
+          : Array.isArray(payload?.result)
+          ? payload.result
+          : [];
+
+        this.customerSuggestions = rows
+          .map((item) => ({
+            customerName: item?.customerName || item?.customer_name || "",
+            customerTaxId: item?.customerTaxId || item?.customer_tax_id || "",
+            customerPhone: item?.customerPhone || item?.customer_phone || "",
+            customerAddress: item?.customerAddress || item?.customer_address || "",
+          }))
+          .filter((item) => item.customerName)
+          .map((item) => ({
+            customerName: item.customerName,
+            customerTaxId: item.customerTaxId || "",
+            customerPhone: item.customerPhone || "",
+            customerAddress: item.customerAddress || "",
+          }));
+      } catch (error) {
+        console.error("Customer suggest error:", error);
+        this.customerSuggestions = [];
+      } finally {
+        this.isCustomerSuggestLoading = false;
+      }
+    },
+
     // --------------------------------------------------------------------------------
     // ส่วนฟังก์ชันส่งออกไฟล์ Excel โดยใช้ XlsxPopulate + JSZip
     // --------------------------------------------------------------------------------
@@ -1453,6 +1577,34 @@ export default {
     },
 
     // 2. ฟังก์ชันดาวน์โหลดแยกไฟล์เดี่ยว
+    async saveBlobWithPicker(blob, fileName, options = {}) {
+      const hasSavePicker =
+        typeof window !== "undefined" && "showSaveFilePicker" in window;
+
+      if (!hasSavePicker) {
+        saveAs(blob, fileName);
+        return "fallback";
+      }
+
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: fileName,
+          types: options.types || [],
+        });
+
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        return "picker";
+      } catch (error) {
+        if (error?.name === "AbortError") return "cancelled";
+
+        console.warn("Save picker failed, fallback to browser download:", error);
+        saveAs(blob, fileName);
+        return "fallback";
+      }
+    },
+
     async downloadIndividual(docType) {
       if (this.isExporting) return;
       this.isExporting = true;
@@ -1473,11 +1625,27 @@ export default {
         }
 
         const blob = await workbook.outputAsync();
-        saveAs(blob, fileName);
+        const saveResult = await this.saveBlobWithPicker(blob, fileName, {
+          types: [
+            {
+              description: "Excel Workbook",
+              accept: {
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+                  ".xlsx",
+                ],
+              },
+            },
+          ],
+        });
+
+        if (saveResult === "cancelled") {
+          Swal.fire("Info", "ยกเลิกการบันทึกไฟล์", "info");
+          return;
+        }
 
         Swal.fire({
           icon: "success",
-          title: "ดาวน์โหลดสำเร็จ",
+          title: "บันทึกไฟล์สำเร็จ",
           timer: 1500,
           showConfirmButton: false,
         });
@@ -1544,13 +1712,26 @@ export default {
 
         if (count > 0) {
           const content = await zip.generateAsync({ type: "blob" });
-          saveAs(
-            content,
-            `เอกสาร_${this.formData.quotationDocId || "ชุด"}.zip`
-          );
+          const zipFileName = `เอกสาร_${this.formData.quotationDocId || "ชุด"}.zip`;
+          const saveResult = await this.saveBlobWithPicker(content, zipFileName, {
+            types: [
+              {
+                description: "ZIP Archive",
+                accept: {
+                  "application/zip": [".zip"],
+                },
+              },
+            ],
+          });
+
+          if (saveResult === "cancelled") {
+            Swal.fire("Info", "ยกเลิกการบันทึกไฟล์", "info");
+            return;
+          }
+
           Swal.fire({
             icon: "success",
-            title: "ดาวน์โหลด ZIP สำเร็จ",
+            title: "บันทึก ZIP สำเร็จ",
             timer: 1500,
             showConfirmButton: false,
           });

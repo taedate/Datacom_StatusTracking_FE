@@ -182,7 +182,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import apiClient from "@/services/authService";
 import Swal from "sweetalert2";
 import { swalTheme } from "@/utils/swalTheme";
 import flatpickr from "flatpickr";
@@ -255,7 +255,7 @@ export default {
             sort_order: sortOrder
         };
 
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/get-project-info`, { params });
+        const res = await apiClient.get('/get-project-info', { params });
         if (res.data.message === "success") {
           this.serverItems = res.data.data;
           this.totalItems = res.data.totalItems;
@@ -281,7 +281,7 @@ export default {
 
         if (result.isConfirmed) {
             try {
-                await axios.post(`${import.meta.env.VITE_API_URL}/delete-project`, { pId: item.pId });
+                await apiClient.post('/delete-project', { pId: item.pId });
                 Swal.fire({
                   icon: 'success',
                   title: 'สำเร็จ',

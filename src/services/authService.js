@@ -27,6 +27,8 @@ apiClient.interceptors.response.use(
       // ล้างข้อมูล
       sessionStorage.removeItem('token');
       sessionStorage.removeItem('user');
+      sessionStorage.removeItem('userId');
+      sessionStorage.removeItem('userName');
 
       // แสดง sweet alert
       Swal.fire({

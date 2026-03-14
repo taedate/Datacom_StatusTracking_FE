@@ -370,7 +370,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import apiClient from "@/services/authService";
 import Swal from "sweetalert2";
 import { swalTheme } from "@/utils/swalTheme";
 import flatpickr from "flatpickr";
@@ -527,7 +527,7 @@ export default {
     async fetchDetail(id) {
       this.loading = true;
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/get-project-detail/${id}`);
+        const res = await apiClient.get(`/get-project-detail/${id}`);
         if (res.data.message === "success") {
            const data = res.data.data;
            this.formData = { ...data };           
@@ -664,8 +664,8 @@ export default {
       this.isSaving = true;
       try {
         const endpoint = this.isNew 
-            ? `${import.meta.env.VITE_API_URL}/create-project` 
-            : `${import.meta.env.VITE_API_URL}/update-project`;
+            ? '/create-project' 
+            : '/update-project';
             
         const formData = new FormData();
 
@@ -682,7 +682,7 @@ export default {
             });
         }
 
-        const res = await axios.post(endpoint, formData);
+        const res = await apiClient.post(endpoint, formData);
         
         if (res.data.message === "success") {
             // Update snapshot immediately to clear dirty state

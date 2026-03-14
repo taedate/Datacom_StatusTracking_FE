@@ -57,7 +57,7 @@
             density="compact"
             color="#4D2FB2"
             bg-color="grey-lighten-5"
-            base-color="grey-lighten-2"
+
             clearable
             hide-details="auto"
             class="rounded-lg"
@@ -74,7 +74,7 @@
             density="compact"
             color="#4D2FB2"
             bg-color="grey-lighten-5"
-            base-color="grey-lighten-2"
+
             clearable
             hide-details="auto"
             class="rounded-lg"
@@ -91,7 +91,6 @@
             density="compact"
             color="#4D2FB2"
             bg-color="grey-lighten-5"
-            base-color="grey-lighten-2"
             clearable
             hide-details="auto"
             class="rounded-lg"
@@ -108,7 +107,7 @@
             density="compact"
             color="#4D2FB2"
             bg-color="grey-lighten-5"
-            base-color="grey-lighten-2"
+
             hide-details="auto"
             clearable
             readonly
@@ -184,7 +183,7 @@
                   style="border-color: var(--warning);"
                 >
                   <v-icon start icon="mdi-truck-delivery-outline" size="small"></v-icon>
-                  {{ item.refSentRepairId }}
+                  {{ formatRefSentRepairLabel(item) }}
                 </v-chip>
             </div>
             <div v-else class="text-grey-lighten-1 text-caption pl-2">
@@ -238,7 +237,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import apiClient from "@/services/authService";
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.css";
 import { Thai } from "flatpickr/dist/l10n/th.js";
@@ -259,9 +258,11 @@ export default {
         "รอรับเครื่อง",
         "รับเครื่องแล้ว",
         "ส่งซ่อมอยู่",
+        "รออะไหล่",
         "กำลังซ่อม",
         "ซ่อมเสร็จ",
-        "ส่งมอบ"
+        "ส่งมอบ",
+        "ยกเลิก"
       ], 
       typeList: [],
 
@@ -275,6 +276,7 @@ export default {
       serverDateRange: null, 
       rawDateRange: [],
       fp: null,
+      sentRepairMechanicMap: {},
 
       headers: [
         { title: "Case ID", key: "caseId", align: "start", width: "10%" },
@@ -325,6 +327,54 @@ export default {
         return 'grey-darken-1';
     },
 
+    formatRefSentRepairLabel(item) {
+      const refId = item?.refSentRepairId;
+      if (!refId) return "-";
+
+      const mechanicName =
+        this.sentRepairMechanicMap[refId] ||
+        item?.mechanicName ||
+        item?.caseSToMechanic ||
+        item?.refSentRepairMechanicName ||
+        item?.sentRepairMechanicName ||
+        item?.technicianName ||
+        item?.techName ||
+        item?.mechanic;
+
+      return mechanicName ? `${refId} (${mechanicName})` : refId;
+    },
+
+    getMechanicNameFromSentRepairData(data) {
+      if (!data) return null;
+      return (
+        data.caseSToMechanic ||
+        data.mechanicName ||
+        data.technicianName ||
+        data.techName ||
+        data.mechanic ||
+        null
+      );
+    },
+
+    async loadSentRepairMechanicNames(items = []) {
+      const refIds = [...new Set(items.map((item) => item?.refSentRepairId).filter(Boolean))];
+      const missingRefIds = refIds.filter((id) => !this.sentRepairMechanicMap[id]);
+
+      if (!missingRefIds.length) return;
+
+      await Promise.allSettled(
+        missingRefIds.map(async (id) => {
+          const res = await apiClient.get(`/get-sent-repair-detail/${id}`);
+          if (res.data.message !== "success") return;
+
+          const mechanicName = this.getMechanicNameFromSentRepairData(res.data.data);
+          if (mechanicName) {
+            this.sentRepairMechanicMap[id] = mechanicName;
+          }
+        })
+      );
+    },
+
     async loadItems({ page, itemsPerPage, sortBy }) {
       this.loading = true;
       try {
@@ -347,11 +397,12 @@ export default {
             sort_order: sortOrder
         };
 
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/get-case-info`, { params });
+        const res = await apiClient.get('/get-case-info', { params });
         
         if (res.data.message === "success") {
           this.serverItems = res.data.data;
           this.totalItems = res.data.totalItems;
+          await this.loadSentRepairMechanicNames(this.serverItems);
         }
       } catch (err) {
         console.error("API Error:", err);
@@ -364,7 +415,7 @@ export default {
 
     async fetchDropdownOptions() {
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_URL}/get-filter-options`);
+        const res = await apiClient.get('/get-filter-options');
         if (res.data.message === "success") {
           this.typeList = res.data.data.types;
         }
@@ -388,7 +439,7 @@ export default {
 
       if (result.isConfirmed) {
         try {
-          const res = await axios.post(`${import.meta.env.VITE_API_URL}/delete-case`, { caseId: item.caseId });
+          const res = await apiClient.post('/delete-case', { caseId: item.caseId });
           await Swal.fire({
             icon: 'success',
             title: 'ลบเสร็จสิ้น',

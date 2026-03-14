@@ -69,7 +69,7 @@
                                     </div>
                                 </div>
 
-                                <div class="text-end mb-4">
+                                <!-- <div class="text-end mb-4">
                                     <span class="small me-1">ผู้ใช้ใหม่ ?</span>
                                     <router-link
                                         to="/register"
@@ -77,7 +77,7 @@
                                     >
                                         ลงทะเบียน
                                     </router-link>
-                                </div>
+                                </div> -->
 
                                 <button
                                     type="submit"
@@ -131,13 +131,14 @@ export default {
         );
 
         if (response.data.message === "success") {
-            // ✅ 1. เก็บ Token ลง SessionStorage (หรือ LocalStorage ตามชอบ)
+            // 1. เก็บ Token ลง SessionStorage (หรือ LocalStorage ตามชอบ)
             sessionStorage.setItem("token", response.data.token);
             
-            // ✅ 2. เก็บข้อมูล User ลง SessionStorage (ต้องแก้ Backend ข้อ 1 ก่อนนะ)
+            // 2. เก็บข้อมูล User ลง SessionStorage (ต้องแก้ Backend ข้อ 1 ก่อนนะ)
             if (response.data.payload) {
                 sessionStorage.setItem("userId", response.data.payload.userId);
                 sessionStorage.setItem("userName", response.data.payload.userName);
+                sessionStorage.setItem("role", response.data.payload.role || "user");
             }
 
             // (Optional) ถ้ามีการใช้ EventBus

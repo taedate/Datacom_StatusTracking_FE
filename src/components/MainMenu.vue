@@ -4,7 +4,7 @@
             <div class="d-flex align-items-center w-100 justify-content-between">
                 <div class="d-flex align-items-center">
                     <div class=" rounded-3 p-1 me-2 d-flex align-items-center justify-content-center">
-                        <img src="https://github.com/taedate/datacom-image/blob/main/logoData.PNG?raw=true" alt="Logo" style="width: 50px; height: 40px;" />
+                        <img src="/LogoDatacom.jpg" alt="Logo" style="width: 50px; height: 40px;" />
                     </div>
                     <span class="fw-bold tracking-tight text-dark"></span>
                 </div>
@@ -24,7 +24,7 @@
                 
                 <div class="d-flex align-items-center mb-5 ps-2 pt-2">
                     <div class="rounded-4 p-2 me-3 shadow-sm d-flex align-items-center justify-content-center">
-                        <img src="https://github.com/taedate/datacom-image/blob/main/logoData.PNG?raw=true" alt="Logo" style="width: 50px; height: 40px;" />
+                        <img src="/LogoDatacom.jpg" alt="Logo" style="width: 50px; height: 40px;" />
                     </div>
                     <hr>
                     <div class="d-flex flex-column">
@@ -81,7 +81,39 @@
                         <span>ใบเสนอราคา</span>
                     </router-link>
 
-                    
+                    <router-link
+                        to="/urgentOverview"
+                        class="nav-link sidebar-link d-flex align-items-center"
+                        :class="{ 'active': $route.path.includes('/urgentOverview') }"
+                        @click="closeMenu"
+                    >
+                        <i class="bi bi-exclamation-triangle-fill me-3 fs-5"></i>
+                        <span>งานเร่งด่วน</span>
+                    </router-link>
+
+                    <template v-if="memRole === 'admin'">
+                        <hr class="my-2 mx-2" style="border-color: rgba(77,47,178,0.12);" />
+                        <p class="text-uppercase text-muted fw-bold ps-3 mb-2" style="font-size: 0.7rem; letter-spacing: 1px;">Admin</p>
+                        <router-link
+                            to="/invite"
+                            class="nav-link sidebar-link d-flex align-items-center"
+                            :class="{ 'active': $route.path === '/invite' }"
+                            @click="closeMenu"
+                        >
+                            <i class="bi bi-person-plus-fill me-3 fs-5"></i>
+                            <span>เชิญสมาชิก</span>
+                        </router-link>
+
+                        <router-link
+                            to="/admin-logs"
+                            class="nav-link sidebar-link d-flex align-items-center"
+                            :class="{ 'active': $route.path === '/admin-logs' }"
+                            @click="closeMenu"
+                        >
+                            <i class="bi bi-activity me-3 fs-5"></i>
+                            <span>กิจกรรมในระบบ</span>
+                        </router-link>
+                    </template>
                 </div>
 
                 <div class="mt-auto border-top pt-3" v-if="memName">
@@ -100,7 +132,10 @@
                             
                             <div class="ms-3 d-flex flex-column overflow-hidden">
                                 <span class="fw-bold text-dark text-truncate" style="font-size: 0.9rem;">{{ memName }}</span>
-                                <span class="text-muted small">เจ้าหน้าที่</span>
+                                <span
+                                    class="small fw-semibold"
+                                    :class="memRole === 'admin' ? 'text-theme' : memRole === 'manager' ? 'text-warning' : 'text-muted'"
+                                >{{ memRole === 'admin' ? 'Admin' : memRole === 'manager' ? 'Manager' : 'User' }}</span>
                             </div>
                             <i class="bi bi-three-dots-vertical ms-auto text-muted"></i>
                         </div>
@@ -138,7 +173,7 @@
                             </div>
                         </div>
                         <h5 class="fw-bold mb-1">{{ memName }}</h5>
-                        <p class="text-muted small mb-3">เจ้าหน้าที่คัดกรองโรค</p>
+                        <p class="text-muted small mb-3">ดาต้าคอมแอนด์เซอร์วิส</p>
                         
                         <div class="bg-light rounded-3 p-3 text-start">
                             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -164,6 +199,7 @@ export default {
     data() {
         return {
             memName: null,
+            memRole: null,
             backendMessage: null,
         };
     },
@@ -180,7 +216,8 @@ export default {
         loadUserData() {
             const fname = sessionStorage.getItem("userName");
             const lname = sessionStorage.getItem("userSurname");
-            
+            this.memRole = sessionStorage.getItem("role") || "user";
+
             if (fname || lname) {
                 this.memName = `${fname || ''} ${lname || ''}`.trim();
             } else {
@@ -354,7 +391,7 @@ export default {
 
 @media (max-width: 991.98px) {
     .sidebar-container {
-        /* Mobile handling handled by Bootstrap offcanvas */
+        z-index: 1045;
     }
 }
 </style>

@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory } from "vue-router"
 import TheRegister from "@/components/TheRegister.vue"
 import TheHome from "@/components/TheHome.vue"
+import TheInviteCreate from "@/components/TheInviteCreate.vue"
+import TheAuditLogs from "@/components/TheAuditLogs.vue"
 import TheLogin from "@/components/TheLogin.vue"
 import TheDocumentDetail from "@/components/TheCaseRepairDetail.vue"
 import TheCaseRepair from "@/components/TheCaseRepair.vue"
@@ -10,6 +12,7 @@ import TheCaseSentRepair from "@/components/TheCaseSentRepair.vue"
 import TheCaseSentRepairDetail from "@/components/TheCaseSentRepairDetail.vue"
 import TheQuotation from "@/components/TheQuotation.vue"
 import TheQuotationDetail from "@/components/TheQuotationDetail.vue"
+import TheUrgentOverview from "@/components/TheUrgentOverview.vue"
 
 const routes = [
   {
@@ -87,6 +90,24 @@ const routes = [
     component: TheQuotationDetail,
     meta: { requiresAuth: true },
     props: true
+  },
+  {
+    path: '/urgentOverview',
+    name: 'TheUrgentOverview',
+    component: TheUrgentOverview,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/invite',
+    name: 'TheInviteCreate',
+    component: TheInviteCreate,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin-logs',
+    name: 'TheAuditLogs',
+    component: TheAuditLogs,
+    meta: { requiresAuth: true, requiresAdmin: true }
   }
 ]
 
@@ -100,9 +121,12 @@ const router = createRouter({
 // -----------------------------
 router.beforeEach((to, from, next) => {
   const userId = sessionStorage.getItem("userId")
+  const role   = sessionStorage.getItem("role")
 
   if (to.meta.requiresAuth && !userId) {
     next("/login")
+  } else if (to.meta.requiresAdmin && role !== "admin") {
+    next("/")
   } else {
     next()
   }

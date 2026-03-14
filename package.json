@@ -24,6 +24,7 @@
     "lucide-vue-next": "^0.555.0",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^5.4.449",
+    "qrcode": "^1.5.4",
     "sweetalert2": "^11.26.17",
     "v-viewer": "^3.0.22",
     "viewerjs": "^1.11.7",

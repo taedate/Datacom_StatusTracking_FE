@@ -27,7 +27,7 @@ jobs:
         npm run build
       env:
         # ใส่ URL Backend ของคุณตรงนี้ (สำคัญมาก!)
-        VITE_API_URL: https://datacom-be.onrender.com
+        VITE_API_URL: http://apidatacom.datacom-service.com
 
     # 4. ส่งไฟล์ในโฟลเดอร์ dist ขึ้น Hostinger ผ่าน FTP
     - name: 📂 Sync files
