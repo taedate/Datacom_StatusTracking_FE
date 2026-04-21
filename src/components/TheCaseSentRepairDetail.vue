@@ -311,6 +311,7 @@ import Swal from "sweetalert2";
 import "flatpickr/dist/flatpickr.css";
 import { useDateHelper } from "@/composables/useDateHelper";
 import { sentRepairService } from "@/services/sentRepairService";
+import apiClient from "@/services/authService";
 import { validationRules as rules } from "@/utils/validationRules";
 import { swalTheme } from "@/utils/swalTheme";
 import html2pdf from "html2pdf.js";
@@ -338,8 +339,8 @@ export default {
       originalFormData: null, // เก็บค่าเริ่มต้น
       
       typeOptions: [
-        "ซ่อมคอมพิวเตอร์", "ซ่อมโน็ตบุ๊ค", "ซ่อมปริ้นเตอร์", "UPS",
-        "ซ่อมมือถือ/แท็บเล็ต", "เปลี่ยนอะไหล่", "อื่นๆ"
+        "ซ่อมคอมพิวเตอร์", "ซ่อมโน็ตบุ๊ค", "ซ่อมปริ้นเตอร์", "ซ่อมมือถือ/แท็บเล็ต", "ลงโปรแกรม/OS",
+        "UPS", "เปลี่ยนอะไหล่", "กู้ข้อมูล", "อื่นๆ"
       ],
 
       formData: {
@@ -642,7 +643,7 @@ export default {
 </script>
 
 <style scoped>
-.bg-light-gray { background-color: var(--background); min-height: 100vh; }
+.bg-light-gray { background-color: #dee2e6 !important; min-height: 100vh; }
 .page-container { width: 100%; min-height: 100vh; transition: all 0.3s ease; background-color: var(--background); }
 
 @media (min-width: 992px) {

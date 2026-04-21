@@ -36,10 +36,10 @@
                 <div class="nav flex-column gap-2 mb-auto">
                     <p class="text-uppercase text-muted fw-bold ps-3 mb-2" style="font-size: 0.7rem; letter-spacing: 1px;">Menu</p>
                     
-                    <router-link to="/" class="nav-link sidebar-link d-flex align-items-center" active-class="active" @click="closeMenu">
+                    <!-- <router-link to="/" class="nav-link sidebar-link d-flex align-items-center" active-class="active" @click="closeMenu">
                         <i class="bi bi-grid-fill me-3 fs-5"></i>
                         <span>หน้าหลัก</span>
-                    </router-link>
+                    </router-link> -->
 
                     <router-link 
                         to="/caseRepair" 
@@ -61,7 +61,7 @@
                         <span>งานส่งซ่อม</span>
                     </router-link>
                     
-                    <router-link 
+                    <!-- <router-link 
                         to="/caseProject" 
                         class="nav-link sidebar-link d-flex align-items-center" 
                         :class="{ 'active': $route.path.includes('/caseProject') }"
@@ -69,7 +69,7 @@
                     >
                         <i class="bi bi-gear-fill me-3 fs-5"></i>
                         <span>งานติดตั้ง</span>
-                    </router-link>
+                    </router-link> -->
 
                     <router-link 
                         to="/quotation" 
@@ -89,6 +89,26 @@
                     >
                         <i class="bi bi-exclamation-triangle-fill me-3 fs-5"></i>
                         <span>งานเร่งด่วน</span>
+                    </router-link>
+
+                    <router-link
+                        to="/customers"
+                        class="nav-link sidebar-link d-flex align-items-center"
+                        :class="{ 'active': $route.path.includes('/customers') }"
+                        @click="closeMenu"
+                    >
+                        <i class="bi bi-people-fill me-3 fs-5"></i>
+                        <span>จัดการลูกค้า</span>
+                    </router-link>
+
+                    <router-link
+                        to="/price-history"
+                        class="nav-link sidebar-link d-flex align-items-center"
+                        :class="{ 'active': $route.path.includes('/price-history') }"
+                        @click="closeMenu"
+                    >
+                        <i class="bi bi-tags-fill me-3 fs-5"></i>
+                        <span>ประวัติราคา</span>
                     </router-link>
 
                     <template v-if="memRole === 'admin'">

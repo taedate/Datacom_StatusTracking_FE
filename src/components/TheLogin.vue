@@ -144,8 +144,10 @@ export default {
             // (Optional) ถ้ามีการใช้ EventBus
             // EventBus.emit("loginok", response.data.payload.userName);
 
-            // ไปหน้าแรก
-            window.location.href = '/';
+            // ไปหน้าที่เข้าก่อนล็อกอิน หรือไปหน้างานรับซ่อม
+            let redirectPath = this.$route.query.redirect || '/caseRepair';
+            if (redirectPath === '/') redirectPath = '/caseRepair';
+            window.location.href = redirectPath;
         }
     } catch (err) {
         console.error(err);
@@ -172,7 +174,7 @@ export default {
     z-index: 100;
     overflow-y: auto;
 
-    background: url("../assets/Gemini_Generated_Image_njewk4njewk4njew.png")
+    background: url("../assets/login-bg.jpg")
         center / cover no-repeat;
 }
 

@@ -1,6 +1,5 @@
 <template>
   <div class="page-container d-flex flex-column">
-    
     <div
       class="px-4 py-3 px-md-6 py-md-4 border-bottom d-flex flex-wrap align-center justify-space-between bg-white flex-shrink-0 sticky-top shadow-sm sticky-header"
       style="z-index: 900; min-height: 80px; top: 0"
@@ -21,17 +20,21 @@
           </v-chip>
         </div>
         <div class="text-body-2 text-grey">
-          {{ isNew ? "กรอกข้อมูลเพื่อรับเครื่องซ่อม" : "แก้ไขรายละเอียดและอัปเดตสถานะงานซ่อม" }}
+          {{
+            isNew
+              ? "กรอกข้อมูลเพื่อรับเครื่องซ่อม"
+              : "แก้ไขรายละเอียดและอัปเดตสถานะงานซ่อม"
+          }}
         </div>
       </div>
 
-      <div 
-        class="d-flex flex-wrap align-center justify-end mt-2 mt-md-0 w-100 w-md-auto" 
+      <div
+        class="d-flex flex-wrap align-center justify-end mt-2 mt-md-0 w-100 w-md-auto"
         style="gap: 8px"
       >
         <v-btn
           v-if="formData.refSentRepairId"
-          color="warning"
+          :color="isSentRepairReturned ? 'success' : 'warning'"
           variant="flat"
           prepend-icon="mdi-link-variant"
           class="text-capitalize font-weight-bold flex-grow-1 flex-md-grow-0"
@@ -101,145 +104,216 @@
             <h5 class="fw-bold mb-4 text-dark">สถานะงานซ่อม (Workflow)</h5>
 
             <div class="w-100 overflow-x-auto py-2 mb-4">
-              <div class="d-flex align-center px-2" style="min-width: 1050px">
-                <div
-                  class="text-center position-relative"
-                  style="z-index: 2; min-width: 100px"
+              <div
+                class="position-relative mx-auto mt-2 mb-2"
+                style="min-width: 1050px; height: 180px"
+              >
+                <!-- SVG Connector Lines -->
+                <svg
+                  class="position-absolute w-100 h-100"
+                  style="z-index: 0; top: 0; left: 0"
+                  stroke-width="3"
+                  fill="none"
+                  viewBox="0 0 100 100"
+                  preserveAspectRatio="none"
                 >
-                  <v-avatar
-                    :color="getStepColor(1)"
-                    size="44"
-                    class="mb-2 border elevation-1"
-                  >
-                    <v-icon
-                      icon="mdi-clock-outline"
-                      color="white"
-                      size="22"
-                    ></v-icon>
-                  </v-avatar>
-                  <div class="text-caption font-weight-bold text-no-wrap">
-                    รอรับเครื่อง
-                  </div>
-                </div>
-                <v-divider
-                  :color="getStepColor(2, true)"
-                  class="border-opacity-100 mx-2 flex-grow-1"
-                  thickness="3"
-                ></v-divider>
+                  <!-- 1 -> 2 (รับเครื่องแล้ว -> รออะไหล่) Top Branch -->
+                  <path
+                    d="M 10 50 C 14 50, 14 25, 20 25 L 30 25"
+                    :stroke="getLineColor('รออะไหล่')"
+                    vector-effect="non-scaling-stroke"
+                  />
+
+                  <!-- 2 -> 3 (รออะไหล่ -> กำลังซ่อม) -->
+                  <line
+                    x1="30"
+                    y1="25"
+                    x2="50"
+                    y2="25"
+                    :stroke="getLineColor('กำลังซ่อม')"
+                    vector-effect="non-scaling-stroke"
+                  />
+
+                  <!-- 3 -> 4 (กำลังซ่อม -> ซ่อมเสร็จ) -->
+                  <path
+                    d="M 50 25 L 61.66 25 C 66 25, 66 50, 70 50"
+                    :stroke="getLineColor('ซ่อมเสร็จ', 'internal')"
+                    vector-effect="non-scaling-stroke"
+                  />
+
+                  <!-- 1 -> S1 (รับเครื่องแล้ว -> ส่งซ่อมอยู่) Bottom Branch -->
+                  <path
+                    d="M 10 50 C 14 50, 14 75, 20 75 L 30 75"
+                    :stroke="getLineColor('ส่งซ่อมอยู่')"
+                    vector-effect="non-scaling-stroke"
+                  />
+
+                  <!-- S1 -> 4 (ส่งซ่อมอยู่ -> ซ่อมเสร็จ) -->
+                  <path
+                    d="M 30 75 L 61.66 75 C 66 75, 66 50, 70 50"
+                    :stroke="getLineColor('ซ่อมเสร็จ', 'external')"
+                    vector-effect="non-scaling-stroke"
+                  />
+
+                  <!-- 4 -> 5 (ซ่อมเสร็จ -> ส่งมอบ) -->
+                  <line
+                    x1="70"
+                    y1="50"
+                    x2="90"
+                    y2="50"
+                    :stroke="getLineColor('ส่งมอบ')"
+                    vector-effect="non-scaling-stroke"
+                  />
+                </svg>
 
                 <div
-                  class="text-center position-relative"
-                  style="z-index: 2; min-width: 100px"
+                  style="
+                    display: grid;
+                    grid-template-columns: repeat(5, 1fr);
+                    grid-template-rows: 1fr 1fr;
+                    height: 100%;
+                    position: relative;
+                    z-index: 2;
+                  "
                 >
-                  <v-avatar
-                    :color="getStepColor(2)"
-                    size="44"
-                    class="mb-2 border elevation-1"
+                  <!-- 1. รับเครื่องแล้ว (Center) -->
+                  <div
+                    style="grid-column: 1; grid-row: 1 / 3"
+                    class="d-flex flex-column align-center justify-center"
                   >
-                    <v-icon
-                      icon="mdi-inbox-arrow-down"
-                      color="white"
-                      size="22"
-                    ></v-icon>
-                  </v-avatar>
-                  <div class="text-caption font-weight-bold text-no-wrap">
-                    รับเครื่องแล้ว
+                    <v-avatar
+                      :color="getStepColor('รับเครื่องแล้ว')"
+                      size="44"
+                      class="mb-2 border elevation-1"
+                    >
+                      <v-icon
+                        icon="mdi-inbox-arrow-down"
+                        color="white"
+                        size="22"
+                      ></v-icon>
+                    </v-avatar>
+                    <div
+                      class="text-caption font-weight-bold text-no-wrap bg-white px-2 py-1 rounded"
+                    >
+                      รับเครื่องแล้ว
+                    </div>
                   </div>
-                </div>
-                <v-divider
-                  :color="getStepColor(3, true)"
-                  class="border-opacity-100 mx-2 flex-grow-1"
-                  thickness="3"
-                ></v-divider>
 
-                <div
-                  class="text-center position-relative"
-                  style="z-index: 2; min-width: 100px"
-                >
-                  <v-avatar
-                    :color="getStepColor(3)"
-                    size="44"
-                    class="mb-2 border elevation-1"
+                  <!-- 3. รออะไหล่ (Top) -->
+                  <div
+                    style="grid-column: 2; grid-row: 1"
+                    class="d-flex flex-column align-center justify-center"
                   >
-                    <v-icon
-                      icon="mdi-package-variant-closed"
-                      color="white"
-                      size="22"
-                    ></v-icon>
-                  </v-avatar>
-                  <div class="text-caption font-weight-bold text-no-wrap">
-                    รออะไหล่
+                    <v-avatar
+                      :color="getStepColor('รออะไหล่')"
+                      size="44"
+                      class="mb-2 border elevation-1"
+                    >
+                      <v-icon
+                        icon="mdi-package-variant-closed"
+                        color="white"
+                        size="22"
+                      ></v-icon>
+                    </v-avatar>
+                    <div
+                      class="text-caption font-weight-bold text-no-wrap bg-white px-2 py-1 rounded"
+                    >
+                      รออะไหล่
+                    </div>
                   </div>
-                </div>
-                <v-divider
-                  :color="getStepColor(4, true)"
-                  class="border-opacity-100 mx-2 flex-grow-1"
-                  thickness="3"
-                ></v-divider>
 
-                <div
-                  class="text-center position-relative"
-                  style="z-index: 2; min-width: 100px"
-                >
-                  <v-avatar
-                    :color="getStepColor(4)"
-                    size="44"
-                    class="mb-2 border elevation-1"
+                  <!-- S1. ส่งซ่อมอยู่ (Bottom) -->
+                  <div
+                    style="grid-column: 2; grid-row: 2"
+                    class="d-flex flex-column align-center justify-center"
                   >
-                    <v-icon icon="mdi-wrench" color="white" size="22"></v-icon>
-                  </v-avatar>
-                  <div class="text-caption font-weight-bold text-no-wrap">
-                    กำลังซ่อม
+                    <v-avatar
+                      :color="getStepColor('ส่งซ่อมอยู่')"
+                      size="44"
+                      class="mb-2 border elevation-1"
+                    >
+                      <v-icon
+                        icon="mdi-truck-fast-outline"
+                        color="white"
+                        size="22"
+                      ></v-icon>
+                    </v-avatar>
+                    <div
+                      class="text-caption font-weight-bold text-no-wrap bg-white px-2 py-1 rounded"
+                    >
+                      ส่งซ่อมอยู่
+                    </div>
                   </div>
-                </div>
-                <v-divider
-                  :color="getStepColor(5, true)"
-                  class="border-opacity-100 mx-2 flex-grow-1"
-                  thickness="3"
-                ></v-divider>
 
-                <div
-                  class="text-center position-relative"
-                  style="z-index: 2; min-width: 100px"
-                >
-                  <v-avatar
-                    :color="getStepColor(5)"
-                    size="44"
-                    class="mb-2 border elevation-1"
+                  <!-- 4. กำลังซ่อม (Top) -->
+                  <div
+                    style="grid-column: 3; grid-row: 1"
+                    class="d-flex flex-column align-center justify-center"
                   >
-                    <v-icon
-                      icon="mdi-check-circle-outline"
-                      color="white"
-                      size="22"
-                    ></v-icon>
-                  </v-avatar>
-                  <div class="text-caption font-weight-bold text-no-wrap">
-                    ซ่อมเสร็จ
+                    <v-avatar
+                      :color="getStepColor('กำลังซ่อม')"
+                      size="44"
+                      class="mb-2 border elevation-1"
+                    >
+                      <v-icon
+                        icon="mdi-wrench"
+                        color="white"
+                        size="22"
+                      ></v-icon>
+                    </v-avatar>
+                    <div
+                      class="text-caption font-weight-bold text-no-wrap bg-white px-2 py-1 rounded"
+                    >
+                      กำลังซ่อม
+                    </div>
                   </div>
-                </div>
-                <v-divider
-                  :color="getStepColor(6, true)"
-                  class="border-opacity-100 mx-2 flex-grow-1"
-                  thickness="3"
-                ></v-divider>
 
-                <div
-                  class="text-center position-relative"
-                  style="z-index: 2; min-width: 100px"
-                >
-                  <v-avatar
-                    :color="getStepColor(6)"
-                    size="44"
-                    class="mb-2 border elevation-1"
+                  <!-- S2. ส่งซ่อมเสร็จ (Removed) -->
+
+                  <!-- 5. ซ่อมเสร็จ (Center) -->
+                  <div
+                    style="grid-column: 4; grid-row: 1 / 3"
+                    class="d-flex flex-column align-center justify-center"
                   >
-                    <v-icon
-                      icon="mdi-handshake-outline"
-                      color="white"
-                      size="22"
-                    ></v-icon>
-                  </v-avatar>
-                  <div class="text-caption font-weight-bold text-no-wrap">
-                    ส่งมอบ
+                    <v-avatar
+                      :color="getStepColor('ซ่อมเสร็จ')"
+                      size="44"
+                      class="mb-2 border elevation-1"
+                    >
+                      <v-icon
+                        icon="mdi-check-circle-outline"
+                        color="white"
+                        size="22"
+                      ></v-icon>
+                    </v-avatar>
+                    <div
+                      class="text-caption font-weight-bold text-no-wrap bg-white px-2 py-1 rounded"
+                    >
+                      ซ่อมเสร็จ
+                    </div>
+                  </div>
+
+                  <!-- 6. ส่งมอบ (Center) -->
+                  <div
+                    style="grid-column: 5; grid-row: 1 / 3"
+                    class="d-flex flex-column align-center justify-center"
+                  >
+                    <v-avatar
+                      :color="getStepColor('ส่งมอบ')"
+                      size="44"
+                      class="mb-2 border elevation-1"
+                    >
+                      <v-icon
+                        icon="mdi-handshake-outline"
+                        color="white"
+                        size="22"
+                      ></v-icon>
+                    </v-avatar>
+                    <div
+                      class="text-caption font-weight-bold text-no-wrap bg-white px-2 py-1 rounded"
+                    >
+                      ส่งมอบ
+                    </div>
                   </div>
                 </div>
               </div>
@@ -270,7 +344,11 @@
                 v-if="statusChanged"
                 class="text-red font-weight-bold text-no-wrap d-flex align-center"
               >
-                <v-icon icon="mdi-alert-circle" size="small" class="mr-1"></v-icon>
+                <v-icon
+                  icon="mdi-alert-circle"
+                  size="small"
+                  class="mr-1"
+                ></v-icon>
                 กรุณาบันทึก
               </span>
             </div>
@@ -475,6 +553,8 @@
                   readonly
                   placeholder="เลือกวันที่"
                   prepend-inner-icon="mdi-calendar-import"
+                  clearable
+                  @click:clear="pickers['datePickUp']?.clear()"
                 ></v-text-field>
               </div>
 
@@ -491,6 +571,8 @@
                   readonly
                   placeholder="เลือกวันที่"
                   prepend-inner-icon="mdi-calendar-clock"
+                  clearable
+                  @click:clear="pickers['dateBeforePicUp']?.clear()"
                 ></v-text-field>
               </div>
 
@@ -508,6 +590,8 @@
                   placeholder="--- ยังไม่เสร็จสิ้น ---"
                   prepend-inner-icon="mdi-calendar-check"
                   :disabled="isNew"
+                  clearable
+                  @click:clear="pickers['dateComplete']?.clear()"
                 ></v-text-field>
               </div>
 
@@ -525,6 +609,8 @@
                   placeholder="--- ยังไม่ส่งมอบ ---"
                   prepend-inner-icon="mdi-calendar-export"
                   :disabled="isNew"
+                  clearable
+                  @click:clear="pickers['dateDelivered']?.clear()"
                 ></v-text-field>
               </div>
             </div>
@@ -566,7 +652,7 @@
         class="btn btn-primary px-4 py-2 rounded-pill d-flex align-items-center gap-2 shadow-sm btn-save-custom"
         @click="saveForm"
         :disabled="isSaving"
-        style="background-color: #4D2FB2; border: none"
+        style="background-color: #4d2fb2; border: none"
       >
         <span v-if="isSaving" class="spinner-border spinner-border-sm"></span>
         <v-icon v-else icon="mdi-content-save" class="me-1"></v-icon>
@@ -583,13 +669,13 @@ import { swalTheme } from "@/utils/swalTheme";
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.css";
 import { Thai } from "flatpickr/dist/l10n/th.js";
-import html2pdf from "html2pdf.js"; 
-import RepairReceipt from "./RepairReceipt.vue"; 
+import html2pdf from "html2pdf.js";
+import RepairReceipt from "./RepairReceipt.vue";
 
 export default {
   name: "CaseRepairDetail",
   components: {
-    RepairReceipt, 
+    RepairReceipt,
   },
   data() {
     return {
@@ -600,10 +686,9 @@ export default {
       isDirty: false,
       originalFormData: null, // เก็บค่าเริ่มต้น
 
-      // เพิ่ม "รออะไหล่" เข้ามาใน statusOptions
       statusOptions: [
-        "รอรับเครื่อง",
         "รับเครื่องแล้ว",
+        "ส่งซ่อมอยู่",
         "รออะไหล่",
         "กำลังซ่อม",
         "ซ่อมเสร็จ",
@@ -642,7 +727,7 @@ export default {
         dateDelivered: "",
         refSentRepairId: null,
       },
-
+      isSentRepairReturned: false,
       previousStatus: "",
       pickers: {},
       rules: {
@@ -661,7 +746,7 @@ export default {
       this.formData.caseStatus = "รับเครื่องแล้ว";
       this.previousStatus = "รับเครื่องแล้ว";
       this.formData.datePickUp = this.getTodayThaiDate();
-      this.$nextTick(() => { 
+      this.$nextTick(() => {
         this.initDatePickers();
         setTimeout(() => {
           this.originalFormData = JSON.stringify(this.formData);
@@ -675,8 +760,35 @@ export default {
   },
 
   watch: {
+    '$route.params.id': {
+      async handler(newId) {
+        if (!newId) return;
+        // Destroy existing date pickers
+        Object.values(this.pickers).forEach((fp) => fp && fp.destroy());
+        this.pickers = {};
+
+        if (newId === 'new') {
+          this.isNew = true;
+          this.formData.caseId = null;
+          this.formData.caseStatus = 'รับเครื่องแล้ว';
+          this.previousStatus = 'รับเครื่องแล้ว';
+          this.formData.datePickUp = this.getTodayThaiDate();
+          this.$nextTick(() => {
+            this.initDatePickers();
+            setTimeout(() => {
+              this.originalFormData = JSON.stringify(this.formData);
+            }, 500);
+          });
+        } else {
+          this.isNew = false;
+          this.formData.caseId = newId;
+          await this.fetchDetail(newId);
+        }
+      },
+    },
     formData: {
       handler(newVal) {
+        if (this.loading) return;
         if (this.originalFormData) {
           const currentData = JSON.stringify(newVal);
           this.isDirty = currentData !== this.originalFormData;
@@ -697,9 +809,9 @@ export default {
         text: "คุณต้องการออกจากหน้านี้โดยไม่บันทึกหรือไม่?",
         icon: "warning",
         showCancelButton: true,
-        confirmButtonText: 'ออกจากหน้านี้',
-        cancelButtonText: 'ยกเลิก',
-        ...swalTheme.danger
+        confirmButtonText: "ออกจากหน้านี้",
+        cancelButtonText: "ยกเลิก",
+        ...swalTheme.danger,
       }).then((result) => {
         if (result.isConfirmed) {
           next();
@@ -715,7 +827,7 @@ export default {
   methods: {
     sendToExternalRepair() {
       const queryData = {
-        refCaseId: this.formData.caseId, 
+        refCaseId: this.formData.caseId,
         cusName: `${this.formData.cusFirstName} ${this.formData.cusLastName}`,
         type: this.formData.caseType,
         brand: this.formData.caseBrand,
@@ -726,20 +838,30 @@ export default {
       };
 
       this.$router.push({
-        name: "TheCaseSentRepairDetail", 
-        params: { id: "new" }, 
-        query: queryData, 
+        name: "TheCaseSentRepairDetail",
+        params: { id: "new" },
+        query: queryData,
       });
     },
+
+    async checkSentRepairStatus(id) {
+      try {
+        const res = await apiClient.get("/get-sent-repair-detail/" + id);
+        if (res.data.message === "success" && res.data.data) {
+          this.isSentRepairReturned = !!res.data.data.dateOfReceived;
+        }
+      } catch (err) {
+        console.error("Failed to check sent repair status", err);
+      }
+    },
+
     async fetchDetail(id) {
       this.loading = true;
       try {
-        const res = await apiClient.get(
-          `/get-case-detail/${id}`
-        );
+        const res = await apiClient.get(`/get-case-detail/${id}`);
         if (res.data.message === "success") {
           const data = res.data.data;
-          
+
           this.formData = {
             caseId: data.caseId,
             cusFirstName: data.cusFirstName,
@@ -758,10 +880,13 @@ export default {
             dateBeforePicUp: data.dateBeforePicUp,
             dateComplete: data.dateComplete,
             dateDelivered: data.dateDelivered,
-            
           };
           this.formData.refSentRepairId = data.refSentRepairId || null;
           this.previousStatus = data.caseStatus;
+
+          if (this.formData.refSentRepairId) {
+            this.checkSentRepairStatus(this.formData.refSentRepairId);
+          }
         }
       } catch (err) {
         console.error("Error fetching detail:", err);
@@ -769,14 +894,16 @@ export default {
           icon: "error",
           title: "Error",
           text: "ไม่สามารถโหลดข้อมูลได้",
-          ...swalTheme.danger
+          ...swalTheme.danger,
         });
       } finally {
         this.loading = false;
+        this.isDirty = false;
         this.$nextTick(() => {
           this.initDatePickers();
           setTimeout(() => {
             this.originalFormData = JSON.stringify(this.formData);
+            this.isDirty = false;
           }, 500);
         });
       }
@@ -789,16 +916,14 @@ export default {
           icon: "warning",
           title: "ข้อมูลไม่ครบถ้วน",
           text: "กรุณากรอกข้อมูลที่จำเป็นให้ครบ",
-          ...swalTheme.confirm
+          ...swalTheme.confirm,
         });
         return;
       }
 
       this.isSaving = true;
       try {
-        const endpoint = this.isNew
-          ? '/create-case'
-          : '/update-case';
+        const endpoint = this.isNew ? "/create-case" : "/update-case";
         const payload = { ...this.formData };
 
         const res = await apiClient.post(endpoint, payload);
@@ -806,8 +931,8 @@ export default {
         if (res.data.message === "success") {
           this.statusChanged = false;
           this.originalFormData = JSON.stringify(this.formData);
-          this.isDirty = false; 
-          
+          this.isDirty = false;
+
           await Swal.fire({
             icon: "success",
             title: "บันทึกสำเร็จ!",
@@ -815,8 +940,8 @@ export default {
             showConfirmButton: false,
           });
 
-          if (this.isNew) {
-            this.$router.replace({ name: "CaseRepair" });
+          if (this.isNew && res.data.caseId) {
+            this.$router.replace({ name: 'TheCaseRepairDetail', params: { id: res.data.caseId } });
           }
         }
       } catch (err) {
@@ -825,7 +950,7 @@ export default {
           icon: "error",
           title: "Error",
           text: "เกิดข้อผิดพลาดในการบันทึก",
-          ...swalTheme.danger
+          ...swalTheme.danger,
         });
       } finally {
         this.isSaving = false;
@@ -844,7 +969,7 @@ export default {
         cancelButtonText: "ยกเลิก",
         cancelButtonColor: "#d33",
         reverseButtons: false,
-        ...swalTheme.confirm
+        ...swalTheme.confirm,
       });
 
       if (result.isConfirmed) {
@@ -893,8 +1018,6 @@ export default {
           return "warning";
         case "รับเครื่องแล้ว":
           return "primary";
-        case "รอรับเครื่อง":
-          return "grey";
         case "ยกเลิก":
           return "error";
         default:
@@ -902,35 +1025,87 @@ export default {
       }
     },
 
-    getStepColor(step, isDivider = false) {
+    getStepColor(stepName) {
       const status = this.formData.caseStatus;
-      let currentStep = 1;
+      if (status === "ยกเลิก") return "#E0E0E0";
 
-      // จัดลำดับสถานะใหม่ ให้ "รออะไหล่" เป็นลำดับที่ 3
-      if (status === "ยกเลิก") currentStep = 0;
-      else if (status === "รับเครื่องแล้ว") currentStep = 2;
-      else if (status === "รออะไหล่" || status === "รอสินค้า") currentStep = 3;
-      else if (status === "กำลังซ่อม") currentStep = 4;
-      else if (status === "ซ่อมเสร็จ") currentStep = 5;
-      else if (status === "ส่งมอบ") currentStep = 6;
+      const levels = {
+        รับเครื่องแล้ว: 2,
+        รออะไหล่: 3.1,
+        กำลังซ่อม: 4.1,
+        ส่งซ่อมอยู่: 3.2,
+        ส่งซ่อมเสร็จ: 4.2,
+        ซ่อมเสร็จ: 5,
+        ส่งมอบ: 6,
+      };
+
+      const currentLvl = levels[status] || 0;
+      const targetLvl = levels[stepName];
 
       const activeColor = "#4D2FB2";
-      const inactiveColor = "#E0E0E0";
       const successColor = "#107C41";
+      const inactiveColor = "#E0E0E0";
 
-      if (isDivider) {
-        return step < currentStep
-          ? successColor
-          : step === currentStep
-          ? activeColor
-          : inactiveColor;
-      } else {
-        return step < currentStep
-          ? successColor
-          : step === currentStep
-          ? activeColor
-          : inactiveColor;
+      if (targetLvl === currentLvl) return activeColor;
+
+      if (currentLvl >= 5 && targetLvl < 5) {
+        const isExternal =
+          !!this.formData.refSentRepairId ||
+          this.previousStatus === "ส่งซ่อมเสร็จ" ||
+          this.previousStatus === "ส่งซ่อมอยู่";
+        if (isExternal) {
+          if (targetLvl === 3.2 || targetLvl === 4.2 || targetLvl < 3)
+            return successColor;
+          return inactiveColor;
+        } else {
+          if (targetLvl === 3.1 || targetLvl === 4.1 || targetLvl < 3)
+            return successColor;
+          return inactiveColor;
+        }
+      } else if (currentLvl > targetLvl) {
+        if (targetLvl < 3) return successColor;
+        
+        const currentBranch = Math.round((currentLvl % 1) * 10);
+        const targetBranch = Math.round((targetLvl % 1) * 10);
+        
+        if (currentBranch === targetBranch) {
+          return successColor;
+        }
+        return inactiveColor;
       }
+      return inactiveColor;
+    },
+
+    getLineColor(targetStepName, mergePoint = null) {
+      const stepColor = this.getStepColor(targetStepName);
+      if (stepColor === "#E0E0E0") return "#E0E0E0";
+
+      if (mergePoint === "internal") {
+        const isExternal =
+          !!this.formData.refSentRepairId ||
+          this.previousStatus === "ส่งซ่อมเสร็จ" ||
+          this.previousStatus === "ส่งซ่อมอยู่";
+        if (
+          isExternal &&
+          (this.formData.caseStatus === "ซ่อมเสร็จ" ||
+            this.formData.caseStatus === "ส่งมอบ")
+        )
+          return "#E0E0E0";
+      }
+      if (mergePoint === "external") {
+        const isExternal =
+          !!this.formData.refSentRepairId ||
+          this.previousStatus === "ส่งซ่อมเสร็จ" ||
+          this.previousStatus === "ส่งซ่อมอยู่";
+        if (
+          !isExternal &&
+          (this.formData.caseStatus === "ซ่อมเสร็จ" ||
+            this.formData.caseStatus === "ส่งมอบ")
+        )
+          return "#E0E0E0";
+      }
+
+      return stepColor === "#4D2FB2" ? "#107C41" : stepColor;
     },
 
     initDatePickers() {
@@ -939,6 +1114,22 @@ export default {
         dateFormat: "d-m-Y",
         disableMobile: true,
         allowInput: false,
+        formatDate: (date) => {
+          const d = String(date.getDate()).padStart(2, "0");
+          const m = String(date.getMonth() + 1).padStart(2, "0");
+          const y = date.getFullYear() + 543;
+          return `${d}-${m}-${y}`;
+        },
+        parseDate: (datestr) => {
+          if (!datestr) return null;
+          const parts = datestr.split(/[-/]/);
+          if (parts.length === 3) {
+            let year = parseInt(parts[2], 10);
+            if (year > 2400) year -= 543;
+            return new Date(year, parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+          }
+          return null;
+        },
         onReady: (d, s, i) => this.adjustYear(i),
         onMonthChange: (d, s, i) => this.adjustYear(i),
         onYearChange: (d, s, i) => this.adjustYear(i),
@@ -1040,7 +1231,7 @@ export default {
           icon: "error",
           title: "ออกใบรับซ่อมไม่สำเร็จ",
           text: error.message,
-          ...swalTheme.danger
+          ...swalTheme.danger,
         });
       }
     },
@@ -1051,7 +1242,7 @@ export default {
 <style scoped>
 /* สไตล์ยังคงเหมือนเดิม */
 .bg-light-gray {
-  background-color: var(--background);
+  background-color: #dee2e6 !important;
   min-height: 100vh;
 }
 .page-container {

@@ -8,7 +8,9 @@
         <h2 class="text-h5 font-weight-bold text-grey-darken-3 mb-1">
           กิจกรรมในระบบ (Audit Logs)
         </h2>
-        <div class="text-body-2 text-grey mb-3">ติดตามการกระทำทั้งหมดของผู้ใช้งานและระบบ</div>
+        <div class="text-body-2 text-grey mb-3">
+          ติดตามการกระทำทั้งหมดของผู้ใช้งานและระบบ
+        </div>
       </div>
 
       <div class="d-flex align-center" style="gap: 12px">
@@ -26,7 +28,11 @@
             </v-btn>
           </template>
           <v-list density="compact">
-            <v-list-item @click="exportData" prepend-icon="mdi-download" title="Export Logs"></v-list-item>
+            <v-list-item
+              @click="exportData"
+              prepend-icon="mdi-download"
+              title="Export Logs"
+            ></v-list-item>
           </v-list>
         </v-menu>
       </div>
@@ -34,7 +40,9 @@
 
     <div class="px-6 py-5 bg-white border-bottom">
       <div class="d-flex align-center mb-4">
-        <div class="bg-primary-lighten-5 rounded-circle pa-2 mr-3 d-flex align-center justify-center">
+        <div
+          class="bg-primary-lighten-5 rounded-circle pa-2 mr-3 d-flex align-center justify-center"
+        >
           <v-icon icon="mdi-filter-variant" color="#4D2FB2" size="20"></v-icon>
         </div>
         <div>
@@ -139,7 +147,7 @@
                   :key="tab.key"
                   :value="tab.key"
                   class="text-capitalize"
-                  style="font-size: 0.8rem;"
+                  style="font-size: 0.8rem"
                 >
                   {{ tab.label }}
                 </v-tab>
@@ -167,16 +175,6 @@
     </div>
 
     <div class="flex-grow-1 bg-white">
-      <div v-if="networkErrorMsg" class="px-6 pt-4">
-        <div class="alert alert-warning d-flex align-items-start gap-2 mb-0" role="alert">
-          <i class="bi bi-wifi-off mt-1"></i>
-          <div>
-            <div class="fw-bold">เชื่อมต่อ Backend ไม่ได้</div>
-            <div class="small">{{ networkErrorMsg }}</div>
-          </div>
-        </div>
-      </div>
-
       <v-data-table-server
         v-model:items-per-page="itemsPerPage"
         :headers="headers"
@@ -189,7 +187,9 @@
         @update:options="loadItems"
       >
         <template v-slot:[`item.logId`]="{ item }">
-          <span class="font-weight-bold text-grey-darken-4">#{{ item.logId }}</span>
+          <span class="text-grey-darken-4"
+            >#{{ item.logId }}</span
+          >
         </template>
 
         <template v-slot:[`item.performedBy`]="{ item }">
@@ -197,8 +197,13 @@
         </template>
 
         <template v-slot:[`item.action`]="{ item }">
-          <v-chip size="small" variant="flat" color="primary" class="font-weight-bold text-white">
-            {{ item.action || '-' }}
+          <v-chip
+            size="small"
+            variant="flat"
+            color="primary"
+            class="font-weight-bold text-white"
+          >
+            {{ item.action || "-" }}
           </v-chip>
         </template>
 
@@ -206,19 +211,40 @@
           <v-chip
             size="small"
             variant="flat"
-            :color="item.status === 'success' ? 'success' : item.status === 'fail' ? 'error' : 'grey-darken-1'"
+            :color="
+              item.status === 'success'
+                ? 'success'
+                : item.status === 'fail'
+                ? 'error'
+                : 'grey-darken-1'
+            "
             class="font-weight-bold text-white"
           >
-            {{ item.status || '-' }}
+            {{ item.status || "-" }}
           </v-chip>
         </template>
 
         <template v-slot:[`item.changes`]="{ item }">
-          <div class="text-grey-darken-2" style="max-width: 280px;">
+          <div class="text-grey-darken-2" style="max-width: 280px">
             <template v-if="summarizeChange(item).length">
-              <div v-for="(line, i) in summarizeChange(item)" :key="i" class="d-flex align-center" style="gap: 4px; line-height: 1.6;">
-                <v-icon v-if="line.icon" :icon="line.icon" size="14" :color="line.color || 'grey'" />
-                <span class="text-truncate" style="max-width: 240px;" :title="line.text">{{ line.text }}</span>
+              <div
+                v-for="(line, i) in summarizeChange(item)"
+                :key="i"
+                class="d-flex align-center"
+                style="gap: 4px; line-height: 1.6"
+              >
+                <v-icon
+                  v-if="line.icon"
+                  :icon="line.icon"
+                  size="14"
+                  :color="line.color || 'grey'"
+                />
+                <span
+                  class="text-truncate"
+                  style="max-width: 240px"
+                  :title="line.text"
+                  >{{ line.text }}</span
+                >
               </div>
             </template>
             <span v-else class="text-grey">-</span>
@@ -243,28 +269,61 @@
 
     <v-dialog v-model="detailDialog" max-width="760px">
       <div class="bg-white rounded-lg pa-5">
-        <h5 class="fw-bold mb-3 text-dark">รายละเอียด Log #{{ selectedLog?.logId }}</h5>
+        <h5 class="fw-bold mb-3 text-dark">
+          รายละเอียด Log #{{ selectedLog?.logId }}
+        </h5>
         <div class="row g-3 text-body-2">
-          <div class="col-6"><strong>ผู้กระทำ:</strong> {{ displayActor(selectedLog) }}</div>
-          <div class="col-6"><strong>performedBy:</strong> {{ selectedLog?.performedBy || '-' }}</div>
-          <div class="col-6"><strong>actorUserId:</strong> {{ selectedLog?.actorUserId || '-' }}</div>
-          <div class="col-6"><strong>action:</strong> {{ selectedLog?.action || '-' }}</div>
-          <div class="col-6"><strong>module:</strong> {{ selectedLog?.module || '-' }}</div>
-          <div class="col-6"><strong>entityType:</strong> {{ selectedLog?.entityType || '-' }}</div>
-          <div class="col-6"><strong>entityId:</strong> {{ selectedLog?.entityId || '-' }}</div>
-          <div class="col-6"><strong>status:</strong> {{ selectedLog?.status || '-' }}</div>
-          <div class="col-12"><strong>ipAddress:</strong> {{ selectedLog?.ipAddress || '-' }}</div>
-          <div class="col-12"><strong>userAgent:</strong> {{ selectedLog?.userAgent || '-' }}</div>
-          <div class="col-12"><strong>requestId:</strong> {{ selectedLog?.requestId || '-' }}</div>
-          <div class="col-12"><strong>createdAt:</strong> {{ formatDate(selectedLog?.createdAt) }}</div>
+          <div class="col-6">
+            <strong>ผู้กระทำ:</strong> {{ displayActor(selectedLog) }}
+          </div>
+          <div class="col-6">
+            <strong>performedBy:</strong> {{ selectedLog?.performedBy || "-" }}
+          </div>
+          <div class="col-6">
+            <strong>actorUserId:</strong> {{ selectedLog?.actorUserId || "-" }}
+          </div>
+          <div class="col-6">
+            <strong>action:</strong> {{ selectedLog?.action || "-" }}
+          </div>
+          <div class="col-6">
+            <strong>module:</strong> {{ selectedLog?.module || "-" }}
+          </div>
+          <div class="col-6">
+            <strong>entityType:</strong> {{ selectedLog?.entityType || "-" }}
+          </div>
+          <div class="col-6">
+            <strong>entityId:</strong> {{ selectedLog?.entityId || "-" }}
+          </div>
+          <div class="col-6">
+            <strong>status:</strong> {{ selectedLog?.status || "-" }}
+          </div>
+          <div class="col-12">
+            <strong>ipAddress:</strong> {{ selectedLog?.ipAddress || "-" }}
+          </div>
+          <div class="col-12">
+            <strong>userAgent:</strong> {{ selectedLog?.userAgent || "-" }}
+          </div>
+          <div class="col-12">
+            <strong>requestId:</strong> {{ selectedLog?.requestId || "-" }}
+          </div>
+          <div class="col-12">
+            <strong>createdAt:</strong> {{ formatDate(selectedLog?.createdAt) }}
+          </div>
           <div class="col-12">
             <strong>detail:</strong>
-            <pre class="detail-json mt-2">{{ prettyDetail(selectedLog?.detail) }}</pre>
+            <pre class="detail-json mt-2">{{
+              prettyDetail(selectedLog?.detail)
+            }}</pre>
           </div>
         </div>
 
         <div class="text-end mt-3">
-          <v-btn color="grey-darken-1" variant="outlined" rounded="pill" @click="detailDialog = false">
+          <v-btn
+            color="grey-darken-1"
+            variant="outlined"
+            rounded="pill"
+            @click="detailDialog = false"
+          >
             ปิด
           </v-btn>
         </div>
@@ -315,15 +374,36 @@ export default {
 
       headers: [
         { title: "Log ID", key: "logId", align: "start", width: "90px" },
-        { title: "ผู้กระทำ", key: "performedBy", width: "100px", sortable: false },
+        {
+          title: "ผู้กระทำ",
+          key: "performedBy",
+          width: "100px",
+          sortable: false,
+        },
         { title: "Action", key: "action", width: "180px" },
         { title: "Module", key: "module", width: "120px" },
         { title: "Entity", key: "entityType", width: "120px", sortable: false },
-        { title: "Entity ID", key: "entityId", width: "120px", sortable: false },
+        {
+          title: "Entity ID",
+          key: "entityId",
+          width: "120px",
+          sortable: false,
+        },
         { title: "Status", key: "status", width: "100px" },
-        { title: "สิ่งที่เปลี่ยนแปลง", key: "changes", sortable: false, width: "280px" },
+        {
+          title: "สิ่งที่เปลี่ยนแปลง",
+          key: "changes",
+          sortable: false,
+          width: "280px",
+        },
         { title: "Created At", key: "createdAt", width: "170px" },
-        { title: "", key: "actions", sortable: false, align: "end", width: "80px" },
+        {
+          title: "",
+          key: "actions",
+          sortable: false,
+          align: "end",
+          width: "80px",
+        },
       ],
     };
   },
@@ -341,12 +421,15 @@ export default {
     filteredEntityStatusItems() {
       const tab = this.entityStatusTab;
       if (tab && this.entityStatusMap[tab]) {
-        return this.entityStatusMap[tab].values.map(v => ({ title: v, value: v }));
+        return this.entityStatusMap[tab].values.map((v) => ({
+          title: v,
+          value: v,
+        }));
       }
       const items = [];
       for (const group of Object.values(this.entityStatusMap)) {
         for (const v of group.values) {
-          if (!items.some(i => i.value === v)) {
+          if (!items.some((i) => i.value === v)) {
             items.push({ title: v, value: v });
           }
         }
@@ -357,11 +440,15 @@ export default {
   watch: {
     filters: {
       handler() {
-        this.loadItems({ page: 1, itemsPerPage: this.itemsPerPage, sortBy: [] });
+        this.loadItems({
+          page: 1,
+          itemsPerPage: this.itemsPerPage,
+          sortBy: [],
+        });
       },
       deep: true,
     },
-    'filters.module'() {
+    "filters.module"() {
       this.filters.entityStatus = null;
       this.entityStatusTab = null;
     },
@@ -457,16 +544,23 @@ export default {
           this.totalItems = payload.length;
         } else {
           this.serverItems = payload?.data || res?.data?.data || [];
-          this.totalItems = payload?.totalItems || res?.data?.totalItems || this.serverItems.length;
+          this.totalItems =
+            payload?.totalItems ||
+            res?.data?.totalItems ||
+            this.serverItems.length;
         }
       } catch (err) {
-        const baseUrl = import.meta.env.VITE_API_URL || "(ไม่ได้ตั้งค่า VITE_API_URL)";
+        const baseUrl =
+          import.meta.env.VITE_API_URL || "(ไม่ได้ตั้งค่า VITE_API_URL)";
         if (err?.code === "ERR_NETWORK") {
           this.networkErrorMsg = `ไม่สามารถเชื่อมต่อ ${baseUrl} ได้ กรุณาตรวจสอบว่า BE เปิดอยู่และพอร์ตถูกต้อง`;
         } else if (err?.response?.status === 404) {
-          this.networkErrorMsg = `ไม่พบ endpoint log ใน BE (ลองแล้ว: ${this.lastTriedEndpoint || "/audit-logs"}) กรุณาให้ BE เปิด route หรือกำหนด VITE_AUDIT_LOGS_PATH`;
+          this.networkErrorMsg = `ไม่พบ endpoint log ใน BE (ลองแล้ว: ${
+            this.lastTriedEndpoint || "/audit-logs"
+          }) กรุณาให้ BE เปิด route หรือกำหนด VITE_AUDIT_LOGS_PATH`;
         } else {
-          this.networkErrorMsg = err?.response?.data?.detail || "โหลดข้อมูลกิจกรรมไม่สำเร็จ";
+          this.networkErrorMsg =
+            err?.response?.data?.detail || "โหลดข้อมูลกิจกรรมไม่สำเร็จ";
         }
         console.error("Audit logs API Error:", err);
         this.serverItems = [];
@@ -505,44 +599,110 @@ export default {
       const detail = item?.detail;
       if (!detail) return lines;
 
-      const d = typeof detail === 'string' ? (() => { try { return JSON.parse(detail); } catch { return null; } })() : detail;
-      if (!d || typeof d !== 'object') {
-        if (typeof detail === 'string' && detail.trim()) {
-          lines.push({ icon: 'mdi-information-outline', color: 'grey', text: detail });
+      const d =
+        typeof detail === "string"
+          ? (() => {
+              try {
+                return JSON.parse(detail);
+              } catch {
+                return null;
+              }
+            })()
+          : detail;
+      if (!d || typeof d !== "object") {
+        if (typeof detail === "string" && detail.trim()) {
+          lines.push({
+            icon: "mdi-information-outline",
+            color: "grey",
+            text: detail,
+          });
         }
         return lines;
       }
 
       // Status change
-      if (d.statusFrom || d.statusTo || d.oldStatus || d.newStatus || d.caseStatus || d.pStatus) {
+      if (
+        d.statusFrom ||
+        d.statusTo ||
+        d.oldStatus ||
+        d.newStatus ||
+        d.caseStatus ||
+        d.pStatus
+      ) {
         const from = d.statusFrom || d.oldStatus || null;
-        const to = d.statusTo || d.newStatus || d.caseStatus || d.pStatus || null;
+        const to =
+          d.statusTo || d.newStatus || d.caseStatus || d.pStatus || null;
         if (from && to) {
-          lines.push({ icon: 'mdi-swap-horizontal', color: 'primary', text: `สถานะ: ${from} → ${to}` });
+          lines.push({
+            icon: "mdi-swap-horizontal",
+            color: "primary",
+            text: `สถานะ: ${from} → ${to}`,
+          });
         } else if (to) {
-          lines.push({ icon: 'mdi-arrow-right-bold', color: 'primary', text: `สถานะ: ${to}` });
+          lines.push({
+            icon: "mdi-arrow-right-bold",
+            color: "primary",
+            text: `สถานะ: ${to}`,
+          });
         }
       }
 
       // Entity info
-      if (d.caseId) lines.push({ icon: 'mdi-wrench', color: 'orange', text: `Case: ${d.caseId}` });
-      if (d.caseSId) lines.push({ icon: 'mdi-truck-delivery', color: 'blue', text: `ส่งซ่อม: ${d.caseSId}` });
-      if (d.pId) lines.push({ icon: 'mdi-folder-outline', color: 'teal', text: `Project: ${d.pId}` });
-      if (d.quotationId || d.quotation_Id) lines.push({ icon: 'mdi-file-document-outline', color: 'indigo', text: `ใบเสนอราคา: ${d.quotationId || d.quotation_Id}` });
+      if (d.caseId)
+        lines.push({
+          icon: "mdi-wrench",
+          color: "orange",
+          text: `Case: ${d.caseId}`,
+        });
+      if (d.caseSId)
+        lines.push({
+          icon: "mdi-truck-delivery",
+          color: "blue",
+          text: `ส่งซ่อม: ${d.caseSId}`,
+        });
+      if (d.pId)
+        lines.push({
+          icon: "mdi-folder-outline",
+          color: "teal",
+          text: `Project: ${d.pId}`,
+        });
+      if (d.quotationId || d.quotation_Id)
+        lines.push({
+          icon: "mdi-file-document-outline",
+          color: "indigo",
+          text: `ใบเสนอราคา: ${d.quotationId || d.quotation_Id}`,
+        });
 
       // Key fields
       if (d.cusFirstName || d.cusLastName) {
-        lines.push({ icon: 'mdi-account', color: 'grey', text: `ลูกค้า: ${[d.cusFirstName, d.cusLastName].filter(Boolean).join(' ')}` });
+        lines.push({
+          icon: "mdi-account",
+          color: "grey",
+          text: `ลูกค้า: ${[d.cusFirstName, d.cusLastName]
+            .filter(Boolean)
+            .join(" ")}`,
+        });
       }
       if (d.customerName || d.customer_name) {
-        lines.push({ icon: 'mdi-account', color: 'grey', text: `ลูกค้า: ${d.customerName || d.customer_name}` });
+        lines.push({
+          icon: "mdi-account",
+          color: "grey",
+          text: `ลูกค้า: ${d.customerName || d.customer_name}`,
+        });
       }
 
       // Fallback: show first few keys if nothing matched
       if (!lines.length) {
         const keys = Object.keys(d).slice(0, 3);
-        const summary = keys.map(k => `${k}: ${typeof d[k] === 'object' ? '...' : d[k]}`).join(', ');
-        if (summary) lines.push({ icon: 'mdi-information-outline', color: 'grey', text: summary });
+        const summary = keys
+          .map((k) => `${k}: ${typeof d[k] === "object" ? "..." : d[k]}`)
+          .join(", ");
+        if (summary)
+          lines.push({
+            icon: "mdi-information-outline",
+            color: "grey",
+            text: summary,
+          });
       }
 
       return lines;
@@ -688,8 +848,8 @@ export default {
 }
 
 :deep(.minimal-table thead tr th) {
-  background-color: var(--theme-tint-1) !important;
-  color: var(--theme-primary) !important;
+  background-color: #f3effd !important;
+  color: #333333 !important;
   font-weight: 700 !important;
   font-size: 0.95rem !important;
   text-transform: uppercase;
@@ -705,9 +865,15 @@ export default {
 
 :deep(.minimal-table tbody tr td) {
   height: 64px !important;
-  font-size: 0.875rem !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
   border-bottom: 1px solid #e0e0e0 !important;
   color: #424242 !important;
+}
+
+:deep(.minimal-table tbody tr td .font-weight-bold),
+:deep(.minimal-table tbody tr td .font-weight-medium) {
+  font-weight: 400 !important;
 }
 
 .bg-primary-lighten-5 {

@@ -803,7 +803,7 @@ export default {
 </script>
 
 <style scoped>
-.bg-light-gray { background-color: var(--background); min-height: 100vh; }
+.bg-light-gray { background-color: #dee2e6 !important; min-height: 100vh; }
 .page-container { width: 100%; min-height: 100vh; transition: all 0.3s ease; background-color: var(--background); }
 
 /* Responsive Layout */

@@ -194,7 +194,7 @@
         </template>
 
         <template v-slot:[`item.baseDateText`]="{ item }">
-          <span class="text-body-2 text-grey-darken-2">{{ item.baseDateText }}</span>
+          <span class="text-grey-darken-2">{{ item.baseDateText }}</span>
         </template>
 
         <template v-slot:[`item.actions`]="{ item }">
@@ -573,8 +573,8 @@ export default {
 }
 
 :deep(.minimal-table thead tr th) {
-  background-color: var(--theme-tint-1) !important;
-  color: var(--theme-primary) !important;
+  background-color: #f3effd !important;
+  color: #333333 !important;
   font-weight: 700 !important;
   font-size: 0.95rem !important;
   text-transform: uppercase;
@@ -590,9 +590,15 @@ export default {
 
 :deep(.minimal-table tbody tr td) {
   height: 64px !important;
-  font-size: 0.875rem !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
   border-bottom: 1px solid #e0e0e0 !important;
   color: #424242 !important;
+}
+
+:deep(.minimal-table tbody tr td .font-weight-bold),
+:deep(.minimal-table tbody tr td .font-weight-medium) {
+  font-weight: 400 !important;
 }
 
 .bg-primary-lighten-5 {

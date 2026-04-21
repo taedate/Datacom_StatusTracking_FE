@@ -127,13 +127,13 @@
         @update:options="loadItems"
       >
         <template v-slot:[`item.pId`]="{ item }">
-          <span class="font-weight-bold text-grey-darken-4 cursor-pointer">{{ item.pId }}</span>
+          <span class="text-grey-darken-4 cursor-pointer">{{ item.pId }}</span>
         </template>
 
         <template v-slot:[`item.pAddress`]="{ item }">
           <div class="d-flex align-center">
             <v-icon size="small" color="grey" start class="mr-1">mdi-map-marker</v-icon>
-            <span class="text-body-2 text-grey-darken-3">{{ item.pAddress || '-' }}</span>
+            <span class="text-grey-darken-3">{{ item.pAddress || '-' }}</span>
           </div>
         </template>
 
@@ -371,8 +371,8 @@ export default {
 }
 
 :deep(.minimal-table thead tr th) {
-  background-color: var(--theme-tint-1) !important;
-  color: var(--theme-primary) !important;
+  background-color: #f3effd !important;
+  color: #333333 !important;
   font-weight: 700 !important;
   font-size: 0.95rem !important;
   text-transform: uppercase;
@@ -389,9 +389,15 @@ export default {
 
 :deep(.minimal-table tbody tr td) {
   height: 64px !important;
-  font-size: 0.875rem !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
   border-bottom: 1px solid #e0e0e0 !important;
   color: #424242 !important;
+}
+
+:deep(.minimal-table tbody tr td .font-weight-bold),
+:deep(.minimal-table tbody tr td .font-weight-medium) {
+  font-weight: 400 !important;
 }
 
 .shadow-sm-custom {

@@ -135,24 +135,42 @@
       >
         <template v-slot:[`item.caseSId`]="{ item }">
           <div>
-            <span class="font-weight-bold text-grey-darken-4 cursor-pointer">{{ item.caseSId }}</span>
+            <span class="text-grey-darken-4 cursor-pointer">{{ item.caseSId }}</span>
             <div class="text-caption text-grey" v-if="item.caseSOrderNo">Ref: {{ item.caseSOrderNo }}</div>
           </div>
+        </template>
+
+        <template v-slot:[`item.refCaseId`]="{ item }">
+            <div v-if="item.refCaseId">
+                <v-chip
+                  color="info"
+                  variant="tonal"
+                  size="small"
+                  class="cursor-pointer"
+                  :to="{ name: 'TheCaseRepairDetail', params: { id: item.refCaseId } }"
+                >
+                  <v-icon start icon="mdi-wrench" size="small"></v-icon>
+                  {{ item.refCaseId }}
+                </v-chip>
+            </div>
+            <div v-else class="text-grey-lighten-1 text-caption pl-2">
+                -
+            </div>
         </template>
 
         <template v-slot:[`item.caseSToMechanic`]="{ item }">
           <div class="d-flex align-center">
             <v-icon size="small" color="grey" start class="mr-1">mdi-account-wrench</v-icon>
-            <span class="text-body-2 text-grey-darken-3 font-weight-bold">{{ item.caseSToMechanic || '-' }}</span>
+            <span class="text-grey-darken-3">{{ item.caseSToMechanic || '-' }}</span>
           </div>
         </template>
 
         <template v-slot:[`item.caseSCusName`]="{ item }">
-          <span class="text-body-2 text-grey-darken-2">{{ item.caseSCusName }}</span>
+          <span class="text-grey-darken-2">{{ item.caseSCusName }}</span>
         </template>
 
         <template v-slot:[`item.deviceInfo`]="{ item }">
-          <div class="text-body-2 font-weight-medium text-grey-darken-3">
+          <div class="text-grey-darken-3">
             {{ item.caseSType }}
           </div>
           <div class="text-caption text-grey">
@@ -172,13 +190,13 @@
         </template>
 
         <template v-slot:[`item.DateSOfSent`]="{ item }">
-            <div class="text-body-2 text-grey-darken-2">
+            <div class="text-grey-darken-2">
                 {{ item.DateSOfSent }}
             </div>
         </template>
 
         <template v-slot:[`item.dateOfReceived`]="{ item }">
-            <div class="text-body-2 text-grey-darken-2">
+            <div class="text-grey-darken-2">
                 {{ formatDateToThai(item.dateOfReceived) }}
             </div>
         </template>
@@ -258,13 +276,14 @@ export default {
       fp: null,
 
       headers: [
-        { title: "Case S-ID", key: "caseSId", align: "start", width: "12%" },
-        { title: "ส่งถึงช่าง/ร้าน", key: "caseSToMechanic", width: "18%", sortable: false },
-        { title: "ลูกค้า", key: "caseSCusName", width: "15%", sortable: false }, 
-        { title: "อุปกรณ์", key: "deviceInfo", width: "20%", sortable: false },
+        { title: "Case S-ID", key: "caseSId", align: "start", width: "10%" },
+        { title: "รับซ่อม (Ref)", key: "refCaseId", width: "12%", sortable: false },
+        { title: "ส่งถึงช่าง/ร้าน", key: "caseSToMechanic", width: "15%", sortable: false },
+        { title: "ลูกค้า", key: "caseSCusName", width: "13%", sortable: false }, 
+        { title: "อุปกรณ์", key: "deviceInfo", width: "18%", sortable: false },
         { title: "สถานะ", key: "status", width: "10%", sortable: false }, 
-        { title: "วันที่ส่ง", key: "DateSOfSent", width: "12%" },
-        { title: "วันที่รับคืน", key: "dateOfReceived", width: "12%" },
+        { title: "วันที่ส่ง", key: "DateSOfSent", width: "11%" },
+        { title: "วันที่รับคืน", key: "dateOfReceived", width: "11%" },
         { title: "", key: "actions", sortable: false, align: "end" },
       ],
     };
@@ -275,8 +294,8 @@ export default {
     },
     typeOptions() { 
         return [
-            "ซ่อมคอมพิวเตอร์", "ซ่อมโน็ตบุ๊ค", "ซ่อมปริ้นเตอร์", 
-            "ซ่อมมือถือ/แท็บเล็ต", "เปลี่ยนอะไหล่", "อื่นๆ"
+          "ซ่อมคอมพิวเตอร์", "ซ่อมโน็ตบุ๊ค", "ซ่อมปริ้นเตอร์", "ซ่อมมือถือ/แท็บเล็ต", "ลงโปรแกรม/OS",
+          "UPS", "เปลี่ยนอะไหล่", "กู้ข้อมูล", "อื่นๆ"
         ]; 
     }
   },
@@ -494,8 +513,8 @@ export default {
 :deep(.minimal-table .v-data-table-header__th:last-child) { padding-right: 24px !important; }
 
 :deep(.minimal-table thead tr th) {
-  background-color: var(--theme-tint-1) !important;
-  color: var(--theme-primary) !important;
+  background-color: #f3effd !important;
+  color: #333333 !important;
   font-weight: 700 !important;
   font-size: 0.95rem !important;
   text-transform: uppercase;
@@ -512,9 +531,15 @@ export default {
 
 :deep(.minimal-table tbody tr td) {
   height: 64px !important;
-  font-size: 0.875rem !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
   border-bottom: 1px solid #e0e0e0 !important;
   color: #424242 !important;
+}
+
+:deep(.minimal-table tbody tr td .font-weight-bold),
+:deep(.minimal-table tbody tr td .font-weight-medium) {
+  font-weight: 400 !important;
 }
 
 .shadow-sm-custom {

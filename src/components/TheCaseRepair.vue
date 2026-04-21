@@ -42,7 +42,7 @@
             ค้นหาและคัดกรอง
           </div>
           <div class="text-caption text-grey">
-            ค้นหาจาก Case ID, ชื่อลูกค้า หรือเบอร์โทร
+            ค้นหาจาก Case ID, ชื่อลูกค้า, เบอร์โทร หรือหน่วยงาน
           </div>
         </div>
       </div>
@@ -51,7 +51,7 @@
         <v-col cols="12" sm="6" md="3">
           <v-text-field
             v-model="filters.keyword"
-            label="ค้นหา (ID, ชื่อ, เบอร์โทร)"
+            label="ค้นหา (ID, ชื่อ, เบอร์โทร, หน่วยงาน)"
             prepend-inner-icon="mdi-magnify"
             variant="outlined"
             density="compact"
@@ -133,11 +133,11 @@
         @update:options="loadItems"
       >
         <template v-slot:[`item.caseId`]="{ item }">
-          <span class="font-weight-bold text-grey-darken-4 cursor-pointer">{{ item.caseId }}</span>
+          <span class="text-grey-darken-4 cursor-pointer">{{ item.caseId }}</span>
         </template>
 
         <template v-slot:[`item.customerName`]="{ item }">
-          <span class="text-grey-darken-3 font-weight-bold text-body-2">
+          <span class="text-grey-darken-3">
               {{ item.cusFirstName }} {{ item.cusLastName }}
           </span>
         </template>
@@ -145,8 +145,12 @@
         <template v-slot:[`item.cusPhone`]="{ item }">
           <div class="d-flex align-center">
             <v-icon size="small" color="grey" start class="mr-1">mdi-phone</v-icon>
-            <span class="text-body-2 text-grey-darken-2">{{ item.cusPhone || '-' }}</span>
+            <span class="text-grey-darken-2">{{ item.cusPhone || '-' }}</span>
           </div>
+        </template>
+
+        <template v-slot:[`item.caseInstitution`]="{ item }">
+          <span class="text-grey-darken-2">{{ item.caseInstitution || '-' }}</span>
         </template>
 
         <template v-slot:[`item.brokenSymptom`]="{ item }">
@@ -175,12 +179,12 @@
         <template v-slot:[`item.refSentRepairId`]="{ item }">
             <div v-if="item.refSentRepairId">
                 <v-chip
-                  color="warning"
+                  :color="sentRepairStatusMap[item.refSentRepairId] ? 'success' : 'warning'"
                   variant="tonal"
                   size="small"
                   class="font-weight-bold cursor-pointer"
                   :to="{ name: 'TheCaseSentRepairDetail', params: { id: item.refSentRepairId } }"
-                  style="border-color: var(--warning);"
+                  :style="`border-color: var(--${sentRepairStatusMap[item.refSentRepairId] ? 'success' : 'warning'});`"
                 >
                   <v-icon start icon="mdi-truck-delivery-outline" size="small"></v-icon>
                   {{ formatRefSentRepairLabel(item) }}
@@ -255,7 +259,6 @@ export default {
       selected: [], 
 
       statusList: [
-        "รอรับเครื่อง",
         "รับเครื่องแล้ว",
         "ส่งซ่อมอยู่",
         "รออะไหล่",
@@ -275,14 +278,17 @@ export default {
       
       serverDateRange: null, 
       rawDateRange: [],
-      fp: null,
+      selected: [], 
       sentRepairMechanicMap: {},
+      sentRepairStatusMap: {},
+      fp: null,
 
       headers: [
         { title: "Case ID", key: "caseId", align: "start", width: "10%" },
         { title: "ชื่อลูกค้า", key: "customerName", width: "15%", sortable: false },
-        { title: "เบอร์โทร", key: "cusPhone", width: "12%", sortable: false }, 
-        { title: "อาการเสีย/ลงโปรแกรม", key: "brokenSymptom", width: "18%", sortable: false },
+        { title: "เบอร์โทร", key: "cusPhone", width: "10%", sortable: false }, 
+        { title: "หน่วยงาน", key: "caseInstitution", width: "12%", sortable: false },
+        { title: "อาการเสีย/ลงโปรแกรม", key: "brokenSymptom", width: "15%", sortable: false },
         { title: "ประเภท", key: "caseType", width: "10%" },
         { title: "สถานะ", key: "caseStatus", width: "10%" },
         { title: "วันที่รับเครื่อง", key: "datePickUp", width: "10%" },
@@ -301,12 +307,14 @@ export default {
   watch: {
     filters: {
         handler() {
+            this.saveFilters();
             this.loadItems({ page: 1, itemsPerPage: this.itemsPerPage, sortBy: [] });
         },
         deep: true
     }
   },
   mounted() {
+    this.restoreFilters();
     this.fetchDropdownOptions();
     this.$nextTick(() => {
       this.initThaiDatePicker();
@@ -371,6 +379,7 @@ export default {
           if (mechanicName) {
             this.sentRepairMechanicMap[id] = mechanicName;
           }
+          this.sentRepairStatusMap[id] = !!res.data.data.dateOfReceived;
         })
       );
     },
@@ -518,6 +527,31 @@ export default {
       this.filters.date = null;
       this.serverDateRange = null; 
       if (this.fp) this.fp.clear();
+      this.saveFilters();
+    },
+
+    saveFilters() {
+      const state = {
+        filters: this.filters,
+        serverDateRange: this.serverDateRange,
+      };
+      sessionStorage.setItem('repairFilters', JSON.stringify(state));
+    },
+
+    restoreFilters() {
+      try {
+        const saved = sessionStorage.getItem('repairFilters');
+        if (!saved) return;
+        const state = JSON.parse(saved);
+        if (state.filters) {
+          this.filters = { ...this.filters, ...state.filters };
+        }
+        if (state.serverDateRange) {
+          this.serverDateRange = state.serverDateRange;
+        }
+      } catch (e) {
+        // ignore parse errors
+      }
     },
   },
 };
@@ -563,8 +597,8 @@ export default {
 }
 
 :deep(.minimal-table thead tr th) {
-  background-color: var(--theme-tint-1) !important;
-  color: var(--theme-primary) !important;
+  background-color: #f3effd !important;
+  color: #333333 !important;
   font-weight: 700 !important;
   font-size: 0.95rem !important;
   text-transform: uppercase;
@@ -581,9 +615,18 @@ export default {
 
 :deep(.minimal-table tbody tr td) {
   height: 64px !important;
-  font-size: 0.875rem !important;
+  font-size: 1rem !important;
+  font-weight: 400 !important;
   border-bottom: 1px solid #e0e0e0 !important;
   color: #424242 !important;
+}
+
+:deep(.minimal-table tbody tr td .font-weight-bold) {
+  font-weight: 400 !important;
+}
+
+:deep(.minimal-table tbody tr td .font-weight-medium) {
+  font-weight: 400 !important;
 }
 
 .shadow-sm-custom {

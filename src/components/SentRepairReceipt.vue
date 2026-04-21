@@ -170,19 +170,19 @@ export default {
 .sub-header { font-size: 12px; }
 
 /* Title */
-.title-box { border: 2px solid var(--theme-primary); padding: 6px; text-align: center; font-weight: bold; font-size: 16px; background-color: var(--theme-tint-1); margin-bottom: 15px; border-radius: 4px; }
+.title-box { border: 2px solid #000; padding: 6px; text-align: center; font-weight: bold; font-size: 16px; background-color: #eee; margin-bottom: 15px; border-radius: 4px; color: #000; }
 
 /* Section */
-.section-header { font-weight: bold; font-size: 15px; border-bottom: 1px solid #999; margin-top: 10px; margin-bottom: 10px; padding-bottom: 2px; }
+.section-header { font-weight: bold; font-size: 15px; border-bottom: 1px solid #000; margin-top: 10px; margin-bottom: 10px; padding-bottom: 2px; color: #000; }
 
 /* Grid / Flex */
-.row-flex { display: flex; width: 100%; margin-bottom: 8px; align-items: flex-end; }
+.row-flex { display: flex; width: 100%; margin-bottom: 14px; align-items: flex-end; }
 .col-1 { flex: 1; display: flex; align-items: flex-end; padding-right: 15px; }
 .col-2 { flex: 2; display: flex; align-items: flex-end; padding-right: 15px; }
 
 /* Typography */
-.label { font-weight: bold; margin-right: 8px; white-space: nowrap; font-size: 14px; }
-.value { border-bottom: 1px dotted #000; flex: 1; padding-left: 5px; color: var(--theme-primary); font-weight: 500; padding-bottom: 2px; word-break: break-all; }
+.label { font-weight: bold; margin-right: 8px; white-space: nowrap; font-size: 13.8px; color: #000; }
+.value { border-bottom: 1px dotted #000; flex: 1; padding-left: 8px; color: #000; font-weight: bold; padding-bottom: 2px; word-break: break-all; }
 .fw-bold { font-weight: bold; }
 .mt-0 { margin-top: 0 !important; }
 .mt-2 { margin-top: 10px !important; }
@@ -197,5 +197,5 @@ export default {
 .sig-box { width: 45%; }
 .sig-line { border-bottom: 1px dotted #000; height: 25px; margin-bottom: 5px; }
 .sig-line-custom { border-bottom: 1px dotted #000; margin-bottom: 5px; height: 25px; display: flex; align-items: flex-end; justify-content: center; }
-.recipient-name { color: var(--theme-primary); font-weight: bold; }
+.recipient-name { color: #000; font-weight: bold; }
 </style>

@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from "vue-router"
+import { createRouter, createWebHashHistory } from "vue-router"
 import TheRegister from "@/components/TheRegister.vue"
 import TheHome from "@/components/TheHome.vue"
 import TheInviteCreate from "@/components/TheInviteCreate.vue"
@@ -13,13 +13,13 @@ import TheCaseSentRepairDetail from "@/components/TheCaseSentRepairDetail.vue"
 import TheQuotation from "@/components/TheQuotation.vue"
 import TheQuotationDetail from "@/components/TheQuotationDetail.vue"
 import TheUrgentOverview from "@/components/TheUrgentOverview.vue"
+import TheCustomer from "@/components/TheCustomer.vue"
+import ThePriceHistory from "@/components/ThePriceHistory.vue"
 
 const routes = [
   {
     path: '/',
-    name: 'Home',
-    component: TheHome,
-    meta: { requiresAuth: true } 
+    redirect: '/caseRepair'
   },
   {
     path: '/register',
@@ -98,6 +98,18 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/customers',
+    name: 'TheCustomer',
+    component: TheCustomer,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/price-history',
+    name: 'ThePriceHistory',
+    component: ThePriceHistory,
+    meta: { requiresAuth: true }
+  },
+  {
     path: '/invite',
     name: 'TheInviteCreate',
     component: TheInviteCreate,
@@ -112,7 +124,7 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHashHistory(import.meta.env.BASE_URL),
   routes
 })
 
@@ -124,9 +136,9 @@ router.beforeEach((to, from, next) => {
   const role   = sessionStorage.getItem("role")
 
   if (to.meta.requiresAuth && !userId) {
-    next("/login")
+    next({ path: '/login', query: { redirect: to.fullPath } })
   } else if (to.meta.requiresAdmin && role !== "admin") {
-    next("/")
+    next("/caseRepair")
   } else {
     next()
   }

@@ -56,7 +56,24 @@
           </template>
           <v-list density="compact" class="py-0 rounded-lg elevation-2">
             <v-list-item
-              @click="downloadIndividual('QUOTATION')"
+              @click="downloadIndividual('QUOTATION_SEPARATE')"
+              :disabled="isExporting"
+              class="hover-bg"
+            >
+              <template v-slot:prepend>
+                <v-icon
+                  icon="mdi-file-document-multiple-outline"
+                  size="small"
+                  class="mr-2 text-grey-darken-1"
+                ></v-icon>
+              </template>
+              <v-list-item-title class="text-body-2"
+                >ใบเสนอราคา (แยกชีตตามกลุ่ม)</v-list-item-title
+              >
+            </v-list-item>
+
+            <v-list-item
+              @click="downloadIndividual('QUOTATION_COMBINED')"
               :disabled="isExporting"
               class="hover-bg"
             >
@@ -68,7 +85,7 @@
                 ></v-icon>
               </template>
               <v-list-item-title class="text-body-2"
-                >ใบเสนอราคา</v-list-item-title
+                >ใบเสนอราคา (รวบยอด แบ่งหน้าออโต้)</v-list-item-title
               >
             </v-list-item>
 
@@ -308,7 +325,7 @@
                   </div>
                   <v-text-field
                     v-model="formData.quotationDocId"
-                    placeholder="เช่น QT-2026-001"
+                    placeholder="เลือกลูกค้าเพื่อสร้างเลขอัตโนมัติ"
                     variant="outlined"
                     density="comfortable"
                     hide-details
@@ -329,6 +346,8 @@
                     hide-details
                     prepend-inner-icon="mdi-calendar-blank"
                     readonly
+                    clearable
+                    @click:clear="pickers['issueDate']?.clear()"
                   ></v-text-field>
                 </div>
                 <div class="col-12 col-md-6">
@@ -372,7 +391,7 @@
                   </div>
                   <v-text-field
                     v-model="formData.deliveryDocId"
-                    placeholder="เช่น DN-2026-001"
+                    placeholder="เปลี่ยนสถานะเพื่อสร้างเลขอัตโนมัติ"
                     variant="outlined"
                     density="comfortable"
                     hide-details
@@ -393,6 +412,8 @@
                     hide-details
                     prepend-inner-icon="mdi-calendar-check"
                     readonly
+                    clearable
+                    @click:clear="pickers['deliveryDate']?.clear()"
                   ></v-text-field>
                 </div>
                 <div class="col-12 col-md-6">
@@ -424,6 +445,8 @@
                     hide-details
                     prepend-inner-icon="mdi-calendar-clock"
                     readonly
+                    clearable
+                    @click:clear="pickers['dueDate']?.clear()"
                   ></v-text-field>
                 </div>
               </template>
@@ -437,10 +460,12 @@
                   </div>
                   <v-text-field
                     v-model="formData.receiptDocId"
-                    placeholder="เช่น RC-2026-001"
+                    placeholder="สร้างอัตโนมัติจากเลขใบส่งของ"
                     variant="outlined"
                     density="comfortable"
                     hide-details
+                    readonly
+                    bg-color="grey-lighten-4"
                   ></v-text-field>
                 </div>
                 <div class="col-12 col-md-4">
@@ -458,6 +483,8 @@
                     hide-details
                     prepend-inner-icon="mdi-calendar-blank"
                     readonly
+                    clearable
+                    @click:clear="pickers['issueDate']?.clear()"
                   ></v-text-field>
                 </div>
               </template>
@@ -664,16 +691,24 @@
                   >
                 </div>
 
-                <div
-                  v-else
-                  class="table-responsive bg-white rounded-lg border mb-4"
-                  style="
-                    overflow-x: auto;
-                    width: 100%;
-                    -webkit-overflow-scrolling: touch;
-                  "
-                >
-                  <table
+                <div v-else>
+                  <div class="d-flex justify-content-end align-items-center mb-2 pb-1 pr-1">
+                    <v-chip :color="calculateSectionRowsUsed(sectionIndex) > 22 ? 'error' : 'success'" size="small" variant="flat" class="font-weight-bold">
+                      พื้นที่เอ็กเซล: {{ calculateSectionRowsUsed(sectionIndex) }} / 22 แถว
+                    </v-chip>
+                    <span v-if="calculateSectionRowsUsed(sectionIndex) > 22" class="text-caption text-danger ms-2 fw-bold bg-red-lighten-5 px-2 py-1 rounded">
+                      <v-icon icon="mdi-alert" size="x-small"></v-icon> ข้อมูลล้นหน้ากระดาษ
+                    </span>
+                  </div>
+                  <div
+                    class="table-responsive bg-white rounded-lg border mb-4"
+                    style="
+                      overflow-x: auto;
+                      width: 100%;
+                      -webkit-overflow-scrolling: touch;
+                    "
+                  >
+                    <table
                     class="table table-hover align-middle mb-0 custom-table mobile-scroll-table"
                   >
                     <thead class="bg-grey-lighten-4">
@@ -686,7 +721,7 @@
                         </th>
                         <th
                           class="py-3 text-dark text-no-wrap"
-                          style="min-width: 250px"
+                          style="min-width: 440px; max-width: 440px; width: 440px;"
                         >
                           รายละเอียด
                         </th>
@@ -735,6 +770,7 @@
                             rows="1"
                             auto-grow
                             class="my-1"
+                            style="min-width: 420px; max-width: 420px; width: 420px;"
                           ></v-textarea>
                         </td>
                         <td>
@@ -767,6 +803,8 @@
                             hide-details
                             class="text-right-input my-1"
                             @input="calculateItemTotal(sectionIndex, itemIndex)"
+                            @focus="item.unitPrice === 0 ? item.unitPrice = '' : null"
+                            @blur="(!item.unitPrice && item.unitPrice !== 0) ? item.unitPrice = 0 : null; calculateItemTotal(sectionIndex, itemIndex)"
                           ></v-text-field>
                         </td>
                         <td class="text-end font-weight-bold text-dark">
@@ -787,6 +825,7 @@
                       </tr>
                     </tbody>
                   </table>
+                  </div>
                 </div>
 
                 <div class="d-flex justify-content-end mt-4">
@@ -965,6 +1004,8 @@
                     hide-details
                     prepend-inner-icon="mdi-calendar-range"
                     readonly
+                    clearable
+                    @click:clear="pickers['chequeDate']?.clear()"
                   ></v-text-field>
                 </div>
                 <div class="col-12 col-md-4">
@@ -1052,6 +1093,8 @@
                         hide-details
                         prepend-inner-icon="mdi-calendar-check"
                         readonly
+                        clearable
+                        @click:clear="pickers['receivedDate']?.clear()"
                       ></v-text-field>
                     </div>
                   </div>
@@ -1087,6 +1130,8 @@
                         hide-details
                         prepend-inner-icon="mdi-calendar-check"
                         readonly
+                        clearable
+                        @click:clear="pickers['sentDate']?.clear()"
                       ></v-text-field>
                     </div>
                   </div>
@@ -1127,6 +1172,8 @@
                     hide-details
                     prepend-inner-icon="mdi-calendar-check"
                     readonly
+                    clearable
+                    @click:clear="pickers['receivedDate']?.clear()"
                   ></v-text-field>
                 </div>
                 <div class="col-12 col-md-4">
@@ -1158,6 +1205,8 @@
                     hide-details
                     prepend-inner-icon="mdi-calendar-check"
                     readonly
+                    clearable
+                    @click:clear="pickers['dateOfReceivingMoney']?.clear()"
                   ></v-text-field>
                 </div>
                 <div class="col-12 col-md-4">
@@ -1324,6 +1373,8 @@ export default {
         "ชิ้น",
         "แพ็ค",
         "กล่อง",
+        "ตัว",
+        "เครื่อง",
         "หน่วย",
         "ชุด",
         "ชั่วโมง",
@@ -1337,7 +1388,7 @@ export default {
       customerSuggestTimer: null,
       previousStatus: "ออกใบเสนอราคา",
       statusChanged: false,
-      activeTab: 0,
+      activeTab: "add-section",
       pickers: {},
       rules: {
         phone: (v) =>
@@ -1359,6 +1410,30 @@ export default {
         }
       },
       deep: true,
+    },
+    "formData.docStatus"(newStatus) {
+      // สร้างเลขที่ใบส่งของอัตโนมัติ
+      if (newStatus === "ออกใบส่งของ" && !this.formData.deliveryDocId) {
+        this.fetchNextDeliveryDocId();
+      }
+      // สร้างเลขที่ใบเสร็จรับเงินอัตโนมัติ (ก็อปเลขจากใบส่งของ เปลี่ยน IV เป็น RV)
+      if (newStatus === "ออกใบเสร็จรับเงิน" && !this.formData.receiptDocId) {
+        if (this.formData.deliveryDocId) {
+          this.formData.receiptDocId = this.formData.deliveryDocId.replace(
+            /^IV/,
+            "RV"
+          );
+        } else {
+          // Fallback ถ้าไม่มีเลขใบส่งของ
+          const now = new Date();
+          const thaiYear = String((now.getFullYear() + 543) % 100).padStart(
+            2,
+            "0"
+          );
+          const month = String(now.getMonth() + 1).padStart(2, "0");
+          this.formData.receiptDocId = `RV${thaiYear}${month}001`;
+        }
+      }
     },
   },
   mounted() {
@@ -1401,6 +1476,68 @@ export default {
   },
 
   methods: {
+    wrapTextThai(text, maxChars = 60) {
+      if (!text) return [""];
+      const rawLines = text.split("\n");
+      const finalLines = [];
+
+      let segmenter;
+      try {
+        segmenter = new Intl.Segmenter("th", { granularity: "word" });
+      } catch (e) {
+        return rawLines;
+      }
+
+      rawLines.forEach((line) => {
+        if (!line.trim()) {
+          finalLines.push("");
+          return;
+        }
+        const words = Array.from(segmenter.segment(line)).map((s) => s.segment);
+        let currentLine = "";
+
+        words.forEach((word) => {
+          // บังคับตัดคำที่ยาวเกิน maxChars (เช่น พิมพ์อังกฤษติดกันรัวๆ ไม่มีเว้นวรรค)
+          if (word.length > maxChars) {
+            if (currentLine) {
+              finalLines.push(currentLine);
+              currentLine = "";
+            }
+            for (let i = 0; i < word.length; i += maxChars) {
+              // ถ้าเศษที่หั่นออกมายาวเท่า maxChars พอดี ก็ push เป็นบรรทัดใหม่
+              const chunk = word.slice(i, i + maxChars);
+              if (chunk.length === maxChars) {
+                finalLines.push(chunk);
+              } else {
+                currentLine = chunk; // เก็บเศษท้ายไปต่อกับคำถัดไป
+              }
+            }
+          } else if ((currentLine + word).length > maxChars) {
+            if (currentLine) {
+              finalLines.push(currentLine);
+              currentLine = word;
+            } else {
+              finalLines.push(word);
+              currentLine = "";
+            }
+          } else {
+            currentLine += word;
+          }
+        });
+        if (currentLine) {
+          finalLines.push(currentLine);
+        }
+      });
+      return finalLines;
+    },
+
+    calculateSectionRowsUsed(sectionIndex) {
+      if (!this.formData.productSections[sectionIndex]) return 0;
+      return this.formData.productSections[sectionIndex].items.reduce((total, item) => {
+        return total + this.wrapTextThai(item.description, 55).length;
+      }, 0);
+    },
+
     resetCustomerDetailFields() {
       this.formData.customerTaxId = "";
       this.formData.customerPhone = "";
@@ -1412,6 +1549,9 @@ export default {
       this.customerSearchText = "";
       this.customerSuggestions = [];
       this.resetCustomerDetailFields();
+      if (this.isNew) {
+        this.formData.quotationDocId = "";
+      }
     },
 
     onCustomerSearchInput(value) {
@@ -1448,20 +1588,31 @@ export default {
       }
 
       const selected = this.customerSuggestions.find(
-        (item) => (item.customerName || "").toLowerCase() === pickedName.toLowerCase()
+        (item) =>
+          (item.customerName || "").toLowerCase() === pickedName.toLowerCase()
       );
-      if (!selected) return;
 
-      this.formData.customerName = selected.customerName || pickedName;
-      this.formData.customerTaxId = selected.customerTaxId || "";
-      this.formData.customerPhone = selected.customerPhone || "";
-      this.formData.customerAddress = selected.customerAddress || "";
+      if (selected) {
+        // เลือกจาก suggest → auto-fill ข้อมูลทั้งหมด
+        this.formData.customerName = selected.customerName || pickedName;
+        this.formData.customerTaxId = selected.customerTaxId || "";
+        this.formData.customerPhone = selected.customerPhone || "";
+        this.formData.customerAddress = selected.customerAddress || "";
+      } else {
+        // พิมพ์ชื่อเอง (ไม่มีใน suggest)
+        this.formData.customerName = pickedName;
+      }
+
+      // สร้างเลขที่ใบเสนอราคาอัตโนมัติ (เฉพาะเอกสารใหม่)
+      if (this.isNew && this.formData.customerName) {
+        this.fetchNextDocId(this.formData.customerName);
+      }
     },
 
     async fetchCustomerSuggestions(keyword) {
       this.isCustomerSuggestLoading = true;
       try {
-        const response = await apiClient.get("/quotation/customers/suggest", {
+        const response = await apiClient.get("/customers/suggest", {
           params: {
             q: keyword,
             limit: 10,
@@ -1484,7 +1635,8 @@ export default {
             customerName: item?.customerName || item?.customer_name || "",
             customerTaxId: item?.customerTaxId || item?.customer_tax_id || "",
             customerPhone: item?.customerPhone || item?.customer_phone || "",
-            customerAddress: item?.customerAddress || item?.customer_address || "",
+            customerAddress:
+              item?.customerAddress || item?.customer_address || "",
           }))
           .filter((item) => item.customerName)
           .map((item) => ({
@@ -1501,6 +1653,20 @@ export default {
       }
     },
 
+    async fetchNextDocId(customerName) {
+      if (!customerName || !customerName.trim()) return;
+      try {
+        const res = await apiClient.get("/quotation/next-doc-id", {
+          params: { customerName: customerName.trim() },
+        });
+        if (res.data?.message === "success" && res.data.docId) {
+          this.formData.quotationDocId = res.data.docId;
+        }
+      } catch (err) {
+        console.error("fetchNextDocId error:", err);
+      }
+    },
+
     // --------------------------------------------------------------------------------
     // ส่วนฟังก์ชันส่งออกไฟล์ Excel โดยใช้ XlsxPopulate + JSZip
     // --------------------------------------------------------------------------------
@@ -1510,7 +1676,7 @@ export default {
       let templateFile = "";
       let sheetPrefix = "";
 
-      if (docType === "QUOTATION") {
+      if (docType === "QUOTATION" || docType === "QUOTATION_SEPARATE" || docType === "QUOTATION_COMBINED") {
         templateFile = "/templates/quotation.xlsx";
       } else if (docType === "DELIVERY_NOTE") {
         templateFile = "/templates/delivery.xlsx";
@@ -1537,37 +1703,41 @@ export default {
       if (sections && sections.length > 0) {
         const templateSheet = workbook.sheet(0);
 
-        // Clone Sheets (เริ่มจากกลุ่มที่ 2)
-        for (let i = 1; i < sections.length; i++) {
-          let sheetName = this.sanitizeSheetName(
-            `${sheetPrefix}${sections[i].name || `Group ${i + 1}`}`
-          );
+        if (docType === "QUOTATION_COMBINED") {
+          this.fillCombinedQuotationSheet(workbook, templateSheet, sections);
+        } else {
+          // Clone Sheets (เริ่มจากกลุ่มที่ 2)
+          for (let i = 1; i < sections.length; i++) {
+            let sheetName = this.sanitizeSheetName(
+              `${sheetPrefix}${sections[i].name || `Group ${i + 1}`}`
+            );
 
-          // ป้องกันชื่อซ้ำ
-          while (workbook.sheet(sheetName)) {
-            sheetName += `_${i + 1}`;
+            // ป้องกันชื่อซ้ำ
+            while (workbook.sheet(sheetName)) {
+              sheetName += `_${i + 1}`;
+            }
+            workbook.cloneSheet(templateSheet, sheetName);
           }
-          workbook.cloneSheet(templateSheet, sheetName);
+
+          // Rename First Sheet
+          const firstSheetName = this.sanitizeSheetName(
+            `${sheetPrefix}${sections[0].name || "Group 1"}`
+          );
+          templateSheet.name(firstSheetName);
+
+          // Fill Data
+          sections.forEach((section, index) => {
+            const sheet = workbook.sheet(index);
+            if (docType === "QUOTATION" || docType === "QUOTATION_SEPARATE") this.fillQuotationSheet(sheet, section);
+            else if (docType === "DELIVERY_NOTE")
+              this.fillDeliverySheet(sheet, section);
+            else if (docType === "RECEIPT") this.fillReceiptSheet(sheet, section);
+          });
         }
-
-        // Rename First Sheet
-        const firstSheetName = this.sanitizeSheetName(
-          `${sheetPrefix}${sections[0].name || "Group 1"}`
-        );
-        templateSheet.name(firstSheetName);
-
-        // Fill Data
-        sections.forEach((section, index) => {
-          const sheet = workbook.sheet(index);
-          if (docType === "QUOTATION") this.fillQuotationSheet(sheet, section);
-          else if (docType === "DELIVERY_NOTE")
-            this.fillDeliverySheet(sheet, section);
-          else if (docType === "RECEIPT") this.fillReceiptSheet(sheet, section);
-        });
       } else {
         // กรณีไม่มีสินค้า
         const sheet = workbook.sheet(0);
-        if (docType === "QUOTATION") this.fillQuotationSheet(sheet, null);
+        if (docType === "QUOTATION" || docType === "QUOTATION_SEPARATE" || docType === "QUOTATION_COMBINED") this.fillQuotationSheet(sheet, null);
         else if (docType === "DELIVERY_NOTE")
           this.fillDeliverySheet(sheet, null);
         else if (docType === "RECEIPT") this.fillReceiptSheet(sheet, null);
@@ -1599,7 +1769,10 @@ export default {
       } catch (error) {
         if (error?.name === "AbortError") return "cancelled";
 
-        console.warn("Save picker failed, fallback to browser download:", error);
+        console.warn(
+          "Save picker failed, fallback to browser download:",
+          error
+        );
         saveAs(blob, fileName);
         return "fallback";
       }
@@ -1612,9 +1785,13 @@ export default {
         const workbook = await this.generateWorkbook(docType);
         let fileName = "";
 
-        if (docType === "QUOTATION") {
-          fileName = `ใบเสนอราคา_${
-            this.formData.quotationDocId || "Draft"
+        if (docType === "QUOTATION_SEPARATE" || docType === "QUOTATION_COMBINED" || docType === "QUOTATION") {
+          const sectionNames = this.formData.productSections
+            .map((s) => s.name)
+            .filter((n) => n && n.trim())
+            .join(" + ");
+          fileName = `ใบเสนอราคาDATA${
+            sectionNames ? " " + sectionNames : ""
           }.xlsx`;
         } else if (docType === "DELIVERY_NOTE") {
           fileName = `ใบส่งของ_${this.formData.deliveryDocId || "Draft"}.xlsx`;
@@ -1630,9 +1807,8 @@ export default {
             {
               description: "Excel Workbook",
               accept: {
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
-                  ".xlsx",
-                ],
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+                  [".xlsx"],
               },
             },
           ],
@@ -1712,17 +1888,23 @@ export default {
 
         if (count > 0) {
           const content = await zip.generateAsync({ type: "blob" });
-          const zipFileName = `เอกสาร_${this.formData.quotationDocId || "ชุด"}.zip`;
-          const saveResult = await this.saveBlobWithPicker(content, zipFileName, {
-            types: [
-              {
-                description: "ZIP Archive",
-                accept: {
-                  "application/zip": [".zip"],
+          const zipFileName = `เอกสาร_${
+            this.formData.quotationDocId || "ชุด"
+          }.zip`;
+          const saveResult = await this.saveBlobWithPicker(
+            content,
+            zipFileName,
+            {
+              types: [
+                {
+                  description: "ZIP Archive",
+                  accept: {
+                    "application/zip": [".zip"],
+                  },
                 },
-              },
-            ],
-          });
+              ],
+            }
+          );
 
           if (saveResult === "cancelled") {
             Swal.fire("Info", "ยกเลิกการบันทึกไฟล์", "info");
@@ -1761,31 +1943,105 @@ export default {
     // --------------------------------------------------------------------------------
     // ฟังก์ชันย่อยสำหรับหยอดข้อมูลแต่ละหน้า (แก้ Address Cells ให้ตรงกับ Template ที่นี่)
     // --------------------------------------------------------------------------------
-    fillQuotationSheet(worksheet, sectionData = null) {
-      // ข้อมูลส่วนหัว (จะเหมือนกันทุก Sheet)
-      worksheet.cell("AM7").value(this.formData.quotationDocId); // เลขที่ใบเสนอราคา
-      // ตรวจสอบว่ามีข้อมูลวันที่หรือไม่ ถ้ามีให้เปลี่ยน - เป็น /
+    fillQuotationHeaderOnly(worksheet) {
+      worksheet.cell("AM7").value(this.formData.quotationDocId);
       const formattedDate = this.formData.issueDate
         ? this.formData.issueDate.replaceAll("-", "/")
         : "";
-
-      worksheet.cell("AM6").value(formattedDate); // วันที่ออก
-      worksheet.cell("G6").value(this.formData.customerName); // ชื่อลูกค้า
-      worksheet.cell("G7").value(this.formData.customerAddress); // ที่อยู่
-      worksheet.cell("AN8").value(this.formData.salesman); // พนักงานขาย
-      // ถ้ามีข้อมูลจะใส่ตัวเลข ถ้าไม่มีจะใส่เส้นเว้นวรรค '___'
+      worksheet.cell("AM6").value(formattedDate);
+      worksheet.cell("G6").value(this.formData.customerName);
+      worksheet.cell("G7").value(this.formData.customerAddress);
+      worksheet.cell("AN8").value(this.formData.salesman);
       const days = this.formData.priceValidityDays || "___";
       worksheet.cell("AH9").value(`ยืนยันราคาที่เสนอภายใน ${days} วัน`);
-      worksheet.cell("C47").value(this.formData.offererName); // ชื่อผู้เสนอราคา
+      worksheet.cell("C47").value(this.formData.offererName);
+    },
+
+    fillCombinedQuotationSheet(workbook, templateSheet, sections) {
+      const totalPages = sections.length;
+      
+      // Clone Sheets (สร้างหน้าตามจำนวนกลุ่ม)
+      for (let i = 1; i < totalPages; i++) {
+        let sheetName = this.sanitizeSheetName(sections[i].name || `Group ${i + 1}`);
+        while (workbook.sheet(sheetName)) {
+          sheetName += `_${i + 1}`;
+        }
+        workbook.cloneSheet(templateSheet, sheetName);
+      }
+
+      // Rename First Sheet
+      const firstSheetName = this.sanitizeSheetName(sections[0].name || "Group 1");
+      templateSheet.name(firstSheetName);
+      const lastSheetName = workbook.sheet(totalPages - 1).name();
+
+      // หยอดข้อมูลทีละกลุ่ม (1 กลุ่ม = 1 หน้า)
+      sections.forEach((section, index) => {
+        const sheet = workbook.sheet(index);
+        const isLastPage = (index === totalPages - 1);
+
+        this.fillQuotationHeaderOnly(sheet);
+
+        let currentRow = 14;
+        if (section && section.items) {
+          section.items.forEach((item, itemIdx) => {
+            const descLines = this.wrapTextThai(item.description, 55);
+            sheet.cell(`B${currentRow}`).value(itemIdx + 1);
+            sheet.cell(`F${currentRow}`).value(descLines[0]);
+            sheet.cell(`AG${currentRow}`).value(item.quantity);
+            sheet.cell(`AJ${currentRow}`).value(item.unit);
+            sheet.cell(`AL${currentRow}`).value(item.unitPrice);
+            sheet.cell(`AR${currentRow}`).value(item.total);
+            currentRow++;
+            for (let i = 1; i < descLines.length; i++) {
+              sheet.cell(`F${currentRow}`).value(descLines[i]);
+              currentRow++;
+            }
+          });
+        }
+
+        // จัดการส่วนท้ายกระดาษ
+        if (!isLastPage) {
+           // หน้าก่อนหน้า ลบสูตรยอดรวมทิ้งแล้วใส่เลขหน้า
+           ['AR35', 'AR36', 'AR37', 'AR38', 'AW35', 'AW36', 'AW37', 'AW38'].forEach(cn => sheet.cell(cn).value(undefined));
+           sheet.cell("B36").value(`${index + 1}/${totalPages}`);
+           sheet.cell("B37").value(undefined); // เคลียร์เผื่อว่า BahtText อยู่ช่องอื่น
+        } else {
+           // หน้าสุดท้าย เปลี่ยนสูตรยอดรวมให้อ้างอิงผลรวมของแต่ละหน้ารวมกัน แบบยืดหยุ่นตามฟอร์แมต Range ของลูกค้า
+           ['AR35', 'AR36', 'AR37', 'AR38', 'AW35', 'AW36', 'AW37', 'AW38'].forEach(cn => {
+               let formula = sheet.cell(cn).formula();
+               if (formula) {
+                   // จับรูปแบบเช่น AR14:AR35, AR14:AW34, AW14:AW35 เป็นต้น
+                   let match = formula.match(/([A-Z]+14:[A-Z]+3[4-8])/);
+                   if (match) {
+                       let origRange = match[1];
+                       // สร้าง string อ้างอิง 'ชื่อชีต'!origRange ของทุกชีตมารวมกัน
+                       let explicitRanges = [];
+                       for(let p=0; p<totalPages; p++) {
+                          explicitRanges.push(`'${workbook.sheet(p).name()}'!${origRange}`);
+                       }
+                       let combinedRanges = explicitRanges.join(',');
+                       
+                       // ทับ range เดิม ด้วย combination
+                       let newF = formula.replace(origRange, combinedRanges);
+                       sheet.cell(cn).formula(newF);
+                   }
+               }
+           });
+           // ไม่แตะต้องช่อง B36-B38 ในหน้าสุดท้าย เพื่อให้มันใช้สูตร BAHTTEXT(เซลล์ที่ถูกต้อง) ตามที่ลูกค้าเซ็ตไว้ใน Template เองได้เลย
+        }
+      });
+    },
+
+    fillQuotationSheet(worksheet, sectionData = null) {
+      // ข้อมูลส่วนหัว (จะเหมือนกันทุก Sheet)
+      this.fillQuotationHeaderOnly(worksheet);
       // รายการสินค้า (หยอดเฉพาะข้อมูลของ section ที่ถูกส่งเข้ามา)
       let currentRow = 14;
 
       if (sectionData && sectionData.items) {
         sectionData.items.forEach((item, index) => {
-          // หั่นข้อความ Description ออกเป็น array ตามการขึ้นบรรทัดใหม่ (Enter)
-          const descLines = item.description
-            ? item.description.split("\n")
-            : [""];
+          // ตัดคำอัตโนมัติก่อนลง Excel โดยจำกัดแถวละ ~55 ตัวอักษร
+          const descLines = this.wrapTextThai(item.description, 55);
 
           // หยอดข้อมูล "บรรทัดแรก" ของสินค้านี้ (ใส่ตัวเลข ลำดับ จำนวน ราคา ครบ)
           worksheet.cell(`B${currentRow}`).value(index + 1);
@@ -1835,10 +2091,8 @@ export default {
 
       if (sectionData && sectionData.items) {
         sectionData.items.forEach((item, index) => {
-          // หั่นข้อความ Description ออกเป็น array ตามการขึ้นบรรทัดใหม่ (Enter)
-          const descLines = item.description
-            ? item.description.split("\n")
-            : [""];
+          // ตัดคำอัตโนมัติก่อนลง Excel โดยจำกัดแถวละ ~55 ตัวอักษร
+          const descLines = this.wrapTextThai(item.description, 55);
 
           // หยอดข้อมูล "บรรทัดแรก" ของสินค้านี้ (ใส่ตัวเลข ลำดับ จำนวน ราคา ครบ)
           worksheet.cell(`B${currentRow}`).value(index + 1);
@@ -1889,10 +2143,8 @@ export default {
       let currentRow = 13;
       if (sectionData && sectionData.items) {
         sectionData.items.forEach((item, index) => {
-          // หั่นข้อความ Description ออกเป็น array ตามการขึ้นบรรทัดใหม่ (Enter)
-          const descLines = item.description
-            ? item.description.split("\n")
-            : [""];
+          // ตัดคำอัตโนมัติก่อนลง Excel โดยจำกัดแถวละ ~55 ตัวอักษร
+          const descLines = this.wrapTextThai(item.description, 55);
 
           // หยอดข้อมูล "บรรทัดแรก" ของสินค้านี้ (ใส่ตัวเลข ลำดับ จำนวน ราคา ครบ)
           worksheet.cell(`B${currentRow}`).value(index + 1);
@@ -1940,6 +2192,26 @@ export default {
         dateFormat: "d-m-Y",
         disableMobile: true,
         allowInput: true,
+        formatDate: (date) => {
+          const d = String(date.getDate()).padStart(2, "0");
+          const m = String(date.getMonth() + 1).padStart(2, "0");
+          const y = date.getFullYear() + 543;
+          return `${d}-${m}-${y}`;
+        },
+        parseDate: (datestr) => {
+          if (!datestr) return null;
+          const parts = datestr.split(/[-/]/);
+          if (parts.length === 3) {
+            let year = parseInt(parts[2], 10);
+            if (year > 2400) year -= 543;
+            return new Date(
+              year,
+              parseInt(parts[1], 10) - 1,
+              parseInt(parts[0], 10)
+            );
+          }
+          return null;
+        },
         onReady: (d, s, i) => this.adjustYear(i),
         onMonthChange: (d, s, i) => this.adjustYear(i),
         onYearChange: (d, s, i) => this.adjustYear(i),
@@ -2096,12 +2368,14 @@ export default {
           })),
         };
 
-        // ถ้ามีรายการสินค้า ให้เปิดกลุ่มแรก (index 0) ถ้าไม่มีค่อยไปหน้าเพิ่มกลุ่ม
+        // ถ้ามีรายการสินค้า ให้เปิดกลุ่มแรก (index 0) ถ้าไม่มีไปหน้าเพิ่มกลุ่ม
         if (
           this.formData.productSections &&
           this.formData.productSections.length > 0
         ) {
           this.activeTab = 0;
+        } else {
+          this.activeTab = "add-section";
         }
 
         this.previousStatus = this.formData.docStatus;
@@ -2262,20 +2536,19 @@ export default {
       item.total =
         (parseFloat(item.quantity) || 0) * (parseFloat(item.unitPrice) || 0);
     },
-    calculateSectionTotal(sectionIndex) {
+    calculateSectionGrandTotal(sectionIndex) {
       return this.formData.productSections[sectionIndex].items.reduce(
         (sum, item) => sum + (parseFloat(item.total) || 0),
         0
       );
     },
-    calculateSectionVAT(sectionIndex) {
-      return this.calculateSectionTotal(sectionIndex) * 0.07;
+    calculateSectionTotal(sectionIndex) {
+      const grandTotal = this.calculateSectionGrandTotal(sectionIndex);
+      return grandTotal / 1.07;
     },
-    calculateSectionGrandTotal(sectionIndex) {
-      return (
-        this.calculateSectionTotal(sectionIndex) +
-        this.calculateSectionVAT(sectionIndex)
-      );
+    calculateSectionVAT(sectionIndex) {
+      const grandTotal = this.calculateSectionGrandTotal(sectionIndex);
+      return grandTotal - (grandTotal / 1.07);
     },
     calculateSubtotal() {
       return this.formData.productSections.reduce(
@@ -2319,9 +2592,12 @@ export default {
       }).then((result) => {
         if (result.isConfirmed) {
           this.formData.productSections.splice(sectionIndex, 1);
-          if (
+          if (this.formData.productSections.length === 0) {
+            this.activeTab = "add-section";
+          } else if (
             this.activeTab >= this.formData.productSections.length &&
-            this.activeTab > 0
+            this.activeTab > 0 &&
+            this.activeTab !== "add-section"
           ) {
             this.activeTab--;
           }
@@ -2340,128 +2616,144 @@ export default {
     removeItemFromSection(sectionIndex, itemIndex) {
       this.formData.productSections[sectionIndex].items.splice(itemIndex, 1);
     },
+    async fetchNextDeliveryDocId() {
+      try {
+        const res = await apiClient.get("/quotation/next-delivery-id");
+        if (res.data?.message === "success" && res.data.docId) {
+          this.formData.deliveryDocId = res.data.docId;
+          return;
+        }
+      } catch (err) {
+        console.error("fetchNextDeliveryDocId error:", err);
+      }
+      // Fallback: สร้างเลขที่ฝั่ง FE ถ้า API ไม่ตอบ
+      const now = new Date();
+      const thaiYear = String((now.getFullYear() + 543) % 100).padStart(2, "0");
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      this.formData.deliveryDocId = `IV${thaiYear}${month}001`;
+    },
   },
 };
 </script>
 
 <style scoped>
 :root {
-    --theme-primary: #4d2fb2;
-    --theme-tint-1: #e9e4f5;
+  --theme-primary: #4d2fb2;
+  --theme-tint-1: #e9e4f5;
 }
 .bg-light-gray {
-    background-color: var(--background);
- min-height: 100vh;
+  background-color: #dee2e6 !important;
+  min-height: 100vh;
 }
 .page-container {
- min-height: 100vh;
- width: 100%;
- max-width: 100vw; /* ล็อคความกว้างไม่ให้เกินหน้าจอ */
- overflow-x: clip; /* เปลี่ยนเป็น clip เพื่อไม่ให้กระทบ sticky */
- transition: all 0.3s ease;
- background-color: var(--background);
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100vw; /* ล็อคความกว้างไม่ให้เกินหน้าจอ */
+  overflow-x: clip; /* เปลี่ยนเป็น clip เพื่อไม่ให้กระทบ sticky */
+  transition: all 0.3s ease;
+  background-color: var(--background);
 }
 .sticky-header {
- box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
 }
 .section-number {
- width: 32px;
- height: 32px;
- border-radius: 50%;
- background: var(--theme-primary, #4d2fb2);
- color: white;
- font-weight: 700;
- font-size: 0.9rem;
- display: inline-flex;
- align-items: center;
- justify-content: center;
- box-shadow: 0 2px 4px rgba(77, 47, 178, 0.2);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--theme-primary, #4d2fb2);
+  color: white;
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(77, 47, 178, 0.2);
 }
 .section-block {
- border: 1px solid #e9ecef;
- box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
- transition: all 0.2s ease-in-out;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease-in-out;
 }
 .custom-table th {
- font-weight: 600;
- font-size: 0.85rem;
- text-transform: uppercase;
- letter-spacing: 0.5px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 .custom-table td {
- padding: 8px 8px !important;
- vertical-align: middle !important;
+  padding: 8px 8px !important;
+  vertical-align: middle !important;
 }
 .mobile-scroll-table {
- min-width: 900px;
+  min-width: 900px;
 }
 :deep(.v-field__input) {
- font-size: 14px !important;
+  font-size: 14px !important;
 }
 :deep(input[type="number"]::-webkit-inner-spin-button),
 :deep(input[type="number"]::-webkit-outer-spin-button) {
- -webkit-appearance: none;
- margin: 0;
+  -webkit-appearance: none;
+  margin: 0;
 }
 :deep(.centered-input input) {
- text-align: center;
+  text-align: center;
 }
 :deep(.text-right-input input) {
- text-align: right;
+  text-align: right;
 }
 .product-tabs :deep(.v-btn) {
- text-transform: none !important;
- letter-spacing: normal;
+  text-transform: none !important;
+  letter-spacing: normal;
 }
 .border-dashed-tab {
- border: 1px dashed #ccc !important;
- background-color: transparent !important;
+  border: 1px dashed #ccc !important;
+  background-color: transparent !important;
 }
 .hover-red:hover {
- color: #dc3545 !important;
- background-color: #fff0f0;
+  color: #dc3545 !important;
+  background-color: #fff0f0;
 }
 .btn-save-custom {
- transition: transform 0.2s;
+  transition: transform 0.2s;
 }
 .btn-save-custom:hover {
- transform: translateY(-2px);
- box-shadow: 0 4px 12px rgba(77, 47, 178, 0.3) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(77, 47, 178, 0.3) !important;
 }
 @media (min-width: 992px) {
- .page-container {
-  padding-left: 280px !important;
-  padding-top: 0 !important;
-  padding-right: 0 !important;
- }
- .fixed-bottom-custom {
-  left: 280px !important;
-  width: calc(100% - 280px) !important;
-  position: fixed;
- bottom: 0;
- }
+  .page-container {
+    padding-left: 280px !important;
+    padding-top: 0 !important;
+    padding-right: 0 !important;
+  }
+  .fixed-bottom-custom {
+    left: 280px !important;
+    width: calc(100% - 280px) !important;
+    position: fixed;
+    bottom: 0;
+  }
 }
 @media (max-width: 991.98px) {
- .page-container {
-  padding-top: 60px !important;
- padding-left: 0 !important;
- }
- .fixed-bottom-custom {
- left: 0 !important;
-  width: 100% !important;
-  position: fixed;
-  bottom: 0;
-  padding-bottom: env(safe-area-inset-bottom, 10px) !important;
- }
- .sticky-header {
-  top: 60px !important;
- }
+  .page-container {
+    padding-top: 60px !important;
+    padding-left: 0 !important;
+  }
+  .fixed-bottom-custom {
+    left: 0 !important;
+    width: 100% !important;
+    position: fixed;
+    bottom: 0;
+    padding-bottom: env(safe-area-inset-bottom, 10px) !important;
+  }
+  .sticky-header {
+    top: 60px !important;
+  }
 }
 .no-scrollbar::-webkit-scrollbar {
- display: none;
+  display: none;
 }
 .no-scrollbar {
- -ms-overflow-style: none;
- scrollbar-width: none;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 </style>
