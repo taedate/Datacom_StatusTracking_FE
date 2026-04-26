@@ -22,7 +22,7 @@
         >
             <div class="d-flex flex-column h-100 p-4">
                 
-                <div class="d-flex align-items-center mb-5 ps-2 pt-2">
+                <div class="d-flex align-items-center mb-4 ps-2 pt-2 flex-shrink-0">
                     <div class="rounded-4 p-2 me-3 shadow-sm d-flex align-items-center justify-content-center">
                         <img src="/LogoDatacom.jpg" alt="Logo" style="width: 50px; height: 40px;" />
                     </div>
@@ -33,8 +33,8 @@
                     </div>
                 </div>
 
-                <div class="nav flex-column gap-2 mb-auto">
-                    <p class="text-uppercase text-muted fw-bold ps-3 mb-2" style="font-size: 0.7rem; letter-spacing: 1px;">Menu</p>
+                <div class="nav flex-column flex-nowrap gap-2 mb-auto sidebar-nav-scroll">
+                    <p class="text-uppercase text-muted fw-bold ps-3 mb-2 flex-shrink-0" style="font-size: 0.7rem; letter-spacing: 1px;">Menu</p>
                     
                     <!-- <router-link to="/" class="nav-link sidebar-link d-flex align-items-center" active-class="active" @click="closeMenu">
                         <i class="bi bi-grid-fill me-3 fs-5"></i>
@@ -136,7 +136,7 @@
                     </template>
                 </div>
 
-                <div class="mt-auto border-top pt-3" v-if="memName">
+                <div class="mt-auto border-top pt-3 flex-shrink-0" v-if="memName">
                     <div class="dropup">
                         <div 
                             class="d-flex align-items-center p-2 rounded-3 user-card cursor-pointer" 
@@ -388,7 +388,23 @@ export default {
     box-shadow: 0 4px 12px rgba(22, 30, 84, 0.25);
 }
 
-/* 4. User Profile Footer */
+/* 4. Scrollable Navigation List */
+.sidebar-nav-scroll {
+    flex-grow: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+    padding-right: 0.5rem;
+}
+.sidebar-nav-scroll::-webkit-scrollbar {
+    width: 4px;
+}
+.sidebar-nav-scroll::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.1);
+    border-radius: 4px;
+}
+
+/* 5. User Profile Footer */
 .user-card {
     transition: background 0.2s;
 }

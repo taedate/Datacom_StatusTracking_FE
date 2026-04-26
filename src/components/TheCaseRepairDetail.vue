@@ -389,7 +389,7 @@
               </div>
               <div class="col-12 col-md-4">
                 <div class="text-subtitle-1 font-weight-bold mb-1">
-                  เบอร์โทรศัพท์ <span class="text-red">*</span>
+                  เบอร์โทรศัพท์
                 </div>
                 <v-text-field
                   v-model="formData.cusPhone"
@@ -399,7 +399,7 @@
                   bg-color="white"
                   type="tel"
                   maxlength="10"
-                  :rules="[rules.required, rules.phone]"
+                  :rules="[rules.phone]"
                   @input="filterPhone"
                 ></v-text-field>
               </div>
